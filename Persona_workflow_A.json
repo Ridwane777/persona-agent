@@ -64,12 +64,12 @@
           },
           "conditions": [
             {
-              "id": "session-check-condition",
-              "leftValue": "={{ $json.user_id }}",
+              "id": "boolean-check-code",
+              "leftValue": "={{ $json.is_active }}",
               "rightValue": "",
               "operator": {
-                "type": "string",
-                "operation": "notEmpty",
+                "type": "boolean",
+                "operation": "true",
                 "singleValue": true
               }
             }
@@ -81,19 +81,18 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -960,
+        -860,
         0
       ],
       "id": "if-session-001",
-      "name": "Session active?",
-      "alwaysOutputData": true
+      "name": "Session active?"
     },
     {
       "parameters": {
         "promptType": "define",
         "text": "={{ $json.chatInput }}",
         "options": {
-          "systemMessage": "Tu es l'assistant d'accueil de Persona, un service de newsletter IA personnalis\u00e9e.\n\n=== SESSION ACTUELLE ===\nSession ID : ${$('Chat trigger').first().json.sessionId}\n\n=== TON R\u00d4LE ===\nG\u00e9rer UNIQUEMENT les inscriptions et les connexions. Rien d'autre.\n\n=== R\u00c8GLES DE DIALOGUE ===\n- R\u00e9ponds toujours en texte brut, clair et convivial.\n- Ne montre JAMAIS de JSON \u00e0 l'utilisateur.\n- Ne r\u00e9v\u00e8le JAMAIS password_hash, user_id ou donn\u00e9es internes.\n\n=== INSCRIPTION ===\n1. Demande les 3 informations : Username, Email, Mot de passe.\n2. D\u00c8S QUE tu as ces 3 informations, APPELLE IMM\u00c9DIATEMENT L'OUTIL 'register' AVANT DE DIRE QUOI QUE CE SOIT. Ne fais aucune phrase, appelle juste l'outil !\n3. UNE FOIS QUE l'outil 'register' a r\u00e9ussi, ALORS SEULEMENT tu peux r\u00e9pondre \u00e0 l'utilisateur pour confirmer l'inscription.\nDans ce message de confirmation, tu DOIS inclure exactement cette phrase : \"Tes donn\u00e9es seront stock\u00e9es pour t'envoyer ta newsletter. Tu peux te d\u00e9sinscrire \u00e0 tout moment.\" Puis demande-lui de se connecter.\n\n=== CONNEXION ===\nDemande l'email, puis le mot de passe.\nD\u00e8s que tu as l'email, TU DOIS appeler l'outil 'Find_user'.\nCompare le champ 'password_hash' retourn\u00e9 avec le mot de passe.\nSi identiques -> TU DOIS appeler l'outil 'Create_active_sessions' avec :\n  - session_id = ${$('Chat trigger').first().json.sessionId}\n  - user_id = (id retourn\u00e9 par Find_user)\nSi diff\u00e9rents -> informe l'utilisateur que le mot de passe est incorrect."
+          "systemMessage": "Tu es l'assistant d'accueil de Persona, un service de newsletter IA personnalis\u00e9e.\n\n=== SESSION ACTUELLE ===\nSession ID : ${$('Chat trigger').first().json.sessionId}\n\n=== TON R\u00d4LE ===\nG\u00e9rer UNIQUEMENT les inscriptions et les connexions. Rien d'autre.\n\n=== R\u00c8GLES DE DIALOGUE ===\n- R\u00e9ponds toujours en texte brut, clair et convivial.\n- Ne montre JAMAIS de JSON \u00e0 l'utilisateur.\n\n=== INSCRIPTION ===\n1. Demande les 3 informations : Username, Email, Mot de passe.\n2. D\u00c8S QUE tu as ces 3 informations, APPELLE IMM\u00c9DIATEMENT L'OUTIL 'register'. Ne fais aucune phrase, appelle juste l'outil !\n3. UNE FOIS QUE l'outil 'register' a r\u00e9ussi, ALORS SEULEMENT r\u00e9ponds \u00e0 l'utilisateur.\nInclus exactement : \"Tes donn\u00e9es seront stock\u00e9es pour t'envoyer ta newsletter. Tu peux te d\u00e9sinscrire \u00e0 tout moment.\" Puis demande-lui de se connecter.\n\n=== CONNEXION ===\nDemande l'email et le mot de passe.\nD\u00e8s que tu les as, TU DOIS appeler l'outil 'Find_user' avec cet email et ce password.\nSi l'outil retourne un utilisateur (succ\u00e8s) -> TU DOIS appeler l'outil 'Create_active_sessions' avec :\n  - session_id = ${$('Chat trigger').first().json.sessionId}\n  - user_id = (id retourn\u00e9 par Find_user)\nSi l'outil ne retourne rien -> informe l'utilisateur que l'email ou le mot de passe est incorrect."
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
@@ -155,7 +154,7 @@
             },
             {
               "fieldId": "password_hash",
-              "fieldValue": "={{ $fromAI('password', 'Le mot de passe fourni par l\\'utilisateur', 'string') }}"
+              "fieldValue": "={{ $fromAI('password', 'Le mot de passe fourni par l\\'utilisateur', 'string').hash('sha256') }}"
             }
           ]
         }
@@ -178,7 +177,7 @@
     {
       "parameters": {
         "descriptionType": "manual",
-        "toolDescription": "Trouve un utilisateur par son email pour la connexion.",
+        "toolDescription": "Cherche un utilisateur via email et mot de passe pour le connecter.",
         "operation": "getAll",
         "tableId": "users",
         "filters": {
@@ -186,7 +185,12 @@
             {
               "keyName": "email",
               "condition": "eq",
-              "keyValue": "={{ $fromAI('email', 'L\\'email fourni par l\\'utilisateur', 'string') }}"
+              "keyValue": "={{ $fromAI('email', 'L\\'adresse email de l\\'utilisateur', 'string') }}"
+            },
+            {
+              "keyName": "password_hash",
+              "condition": "eq",
+              "keyValue": "={{ $fromAI('password', 'Le mot de passe fourni par l\\'utilisateur', 'string').hash('sha256') }}"
             }
           ]
         },
@@ -276,7 +280,8 @@
           "id": "SUPABASE_CREDENTIAL_ID",
           "name": "Supabase account"
         }
-      }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -287,7 +292,7 @@
             {
               "keyName": "id",
               "condition": "eq",
-              "keyValue": "={{ $json.user_id }}"
+              "keyValue": "={{ $('check_sessions').first().json.user_id }}"
             }
           ]
         },
@@ -308,7 +313,8 @@
           "id": "SUPABASE_CREDENTIAL_ID",
           "name": "Supabase account"
         }
-      }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -319,7 +325,7 @@
             {
               "keyName": "user_id",
               "condition": "eq",
-              "keyValue": "={{ $json.id }}"
+              "keyValue": "={{ $('check_sessions').first().json.user_id }}"
             }
           ]
         },
@@ -354,13 +360,13 @@
           },
           "conditions": [
             {
-              "id": "prefs-exist-condition",
-              "leftValue": "={{ $json.user_id }}",
-              "rightValue": "",
+              "id": "string-check",
+              "leftValue": "={{ $json.user_id ? 'yes' : 'no' }}",
+              "rightValue": "yes",
               "operator": {
                 "type": "string",
-                "operation": "notEmpty",
-                "singleValue": true
+                "operation": "equals",
+                "singleValue": false
               }
             }
           ],
@@ -375,15 +381,14 @@
         -180
       ],
       "id": "if-prefs-001",
-      "name": "Pr\u00e9f\u00e9rences configur\u00e9es?",
-      "alwaysOutputData": true
+      "name": "Pr\u00e9f\u00e9rences configur\u00e9es?"
     },
     {
       "parameters": {
         "promptType": "define",
         "text": "={{ $json.chatInput }}",
         "options": {
-          "systemMessage": "={{ 'Tu es l\\'assistant principal de Persona pour l\\'utilisateur ' + $('R\u00e9cup\u00e9rer infos utilisateur').first().json.username + '.\\n\\n=== CONTEXTE UTILISATEUR ===\\nUsername : ' + $('R\u00e9cup\u00e9rer infos utilisateur').first().json.username + '\\nUser ID : ' + $('R\u00e9cup\u00e9rer infos utilisateur').first().json.id + '\\nSession ID : ' + $('Chat trigger').first().json.sessionId + '\\n\\n=== PR\u00c9F\u00c9RENCES ACTUELLES ===\\n' + JSON.stringify($('R\u00e9cup\u00e9rer pr\u00e9f\u00e9rences').first().json) + '\\n\\n=== TES CAPACIT\u00c9S ===\\n1. ONBOARDING : Si l\\'utilisateur n\\'a pas encore de pr\u00e9f\u00e9rences (topics vides), guide-le pour les configurer.\\n   Collecte dans cet ordre : topics (centres d\\'int\u00e9r\u00eat), heure de r\u00e9ception (HH:MM UTC), nombre d\\'articles souhait\u00e9s (1-10), langue (fr/en).\\n   Mentionne le consentement RGPD avant de sauvegarder.\\n   Quand tout est collect\u00e9, appelle \\'save_preferences\\'.\\n\\n2. MODIFICATION : L\\'utilisateur peut changer ses pr\u00e9f\u00e9rences \u00e0 tout moment.\\n   Appelle \\'update_preferences\\' avec les nouvelles valeurs.\\n\\n3. FEEDBACK : Si l\\'utilisateur commente une newsletter pass\u00e9e, appelle \\'save_feedback\\'.\\n\\n4. D\u00c9SINSCRIPTION : Si l\\'utilisateur veut se d\u00e9sinscrire, confirme son intention, puis appelle \\'unsubscribe_user\\'.\\n\\n5. PROMPT PERSONNALIS\u00c9 : Si l\\'utilisateur veut customiser le ton/style de sa newsletter, appelle \\'update_custom_prompt\\'.\\n\\n=== R\u00c8GLES ===\\n- R\u00e9ponds toujours en texte brut convivial.\\n- Ne montre jamais de JSON ou donn\u00e9es techniques.\\n- Ne traite que les donn\u00e9es de CET utilisateur uniquement.' }}"
+          "systemMessage": "={{ `Tu es l'assistant principal de Persona pour l'utilisateur ${$('R\u00e9cup\u00e9rer infos utilisateur').first()?.json?.username || 'Utilisateur'}.\n\n=== CONTEXTE UTILISATEUR ===\nUsername : ${$('R\u00e9cup\u00e9rer infos utilisateur').first()?.json?.username || 'Inconnu'}\nUser ID : ${$('R\u00e9cup\u00e9rer infos utilisateur').first()?.json?.id || 'Inconnu'}\nSession ID : ${$('Chat trigger').first()?.json?.sessionId || 'Inconnu'}\n\n=== PR\u00c9F\u00c9RENCES ACTUELLES ===\n${JSON.stringify($('R\u00e9cup\u00e9rer pr\u00e9f\u00e9rences').first()?.json || {})}\n\n=== TES CAPACIT\u00c9S ===\n1. ONBOARDING : Si l'utilisateur n'a pas encore de pr\u00e9f\u00e9rences (topics vides), guide-le pour les configurer.\n   Collecte dans cet ordre : topics (centres d'int\u00e9r\u00eat), heure de r\u00e9ception (HH:MM UTC), nombre d'articles souhait\u00e9s (1-10), langue (fr/en).\n   Mentionne le consentement RGPD avant de sauvegarder.\n   Quand tout est collect\u00e9, appelle 'save_preferences'.\n\n2. MODIFICATION : L'utilisateur peut changer ses pr\u00e9f\u00e9rences \u00e0 tout moment.\n   Appelle 'update_preferences' avec les nouvelles valeurs.\n\n3. FEEDBACK : Si l'utilisateur commente une newsletter pass\u00e9e, appelle 'save_feedback'.\n\n4. D\u00c9SINSCRIPTION : Si l'utilisateur veut se d\u00e9sinscrire, confirme son intention, puis appelle 'unsubscribe_user'.\n\n5. PROMPT PERSONNALIS\u00c9 : Si l'utilisateur veut customiser le ton/style de sa newsletter, appelle 'update_custom_prompt'.\n\n=== R\u00c8GLES ===\n- R\u00e9ponds toujours en texte brut convivial.\n- Ne montre jamais de JSON ou donn\u00e9es techniques.\n- Ne traite que les donn\u00e9es de CET utilisateur uniquement.` }}"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
@@ -735,6 +740,19 @@
       ],
       "id": "restore-chat-principal-001",
       "name": "Restore Chat Input Principal"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.item.json;\nreturn { json: { ...item, is_active: !!item.user_id } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1060,
+        0
+      ],
+      "id": "code-session-check-001",
+      "name": "Compute Session State"
     }
   ],
   "pinData": {},
@@ -754,7 +772,7 @@
       "main": [
         [
           {
-            "node": "Session active?",
+            "node": "Compute Session State",
             "type": "main",
             "index": 0
           }
@@ -978,6 +996,17 @@
         [
           {
             "node": "Agent Principal (connect\u00e9)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Session State": {
+      "main": [
+        [
+          {
+            "node": "Session active?",
             "type": "main",
             "index": 0
           }
