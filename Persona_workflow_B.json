@@ -1,0 +1,700 @@
+{
+  "name": "Persona \u2014 Workflow B (Newsletter)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1600,
+        0
+      ],
+      "id": "schedule-001",
+      "name": "Schedule Trigger (toutes les heures)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const now = new Date();\nconst currentHour = now.getUTCHours().toString().padStart(2, '0') + ':00:00';\nreturn [{ json: { currentHour } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1380,
+        0
+      ],
+      "id": "get-current-hour-001",
+      "name": "Calculer heure UTC"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "users",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "is_active",
+              "condition": "eq",
+              "keyValue": "=true"
+            },
+            {
+              "keyName": "gdpr_consent",
+              "condition": "eq",
+              "keyValue": "=true"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1160,
+        0
+      ],
+      "id": "get-active-users-001",
+      "name": "Utilisateurs actifs",
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "preferences",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.id }}"
+            },
+            {
+              "keyName": "schedule_time",
+              "condition": "eq",
+              "keyValue": "={{ $('Calculer heure UTC').item.json.currentHour }}"
+            }
+          ]
+        },
+        "options": {
+          "limit": 1
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -940,
+        0
+      ],
+      "id": "get-user-prefs-001",
+      "name": "Pr\u00e9f\u00e9rences user",
+      "alwaysOutputData": false,
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "has-prefs-condition",
+              "leftValue": "={{ $json.user_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -720,
+        0
+      ],
+      "id": "if-has-prefs-001",
+      "name": "A des prefs \u00e0 cet horaire?"
+    },
+    {
+      "parameters": {
+        "jsCode": "// R\u00e9cup\u00e9rer les infos utilisateur et pr\u00e9f\u00e9rences\nconst user = $('Utilisateurs actifs').item.json;\nconst prefs = $('Pr\u00e9f\u00e9rences user').item.json;\n\n// Construire l'objet complet\nreturn [{\n  json: {\n    user_id: user.id,\n    username: user.username,\n    email: user.email,\n    topics: prefs.topics || [],\n    language: prefs.language || 'fr',\n    num_articles: prefs.num_articles || 5,\n    custom_prompt: prefs.custom_prompt || null\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -500,
+        0
+      ],
+      "id": "merge-user-prefs-001",
+      "name": "Fusionner user + prefs"
+    },
+    {
+      "parameters": {
+        "url": "https://newsapi.org/v2/everything",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $json.topics.join(' OR ') }}"
+            },
+            {
+              "name": "language",
+              "value": "={{ $json.language === 'fr' ? 'fr' : 'en' }}"
+            },
+            {
+              "name": "sortBy",
+              "value": "publishedAt"
+            },
+            {
+              "name": "pageSize",
+              "value": "15"
+            },
+            {
+              "name": "apiKey",
+              "value": "YOUR_NEWSAPI_KEY"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -280,
+        -120
+      ],
+      "id": "newsapi-001",
+      "name": "NewsAPI"
+    },
+    {
+      "parameters": {
+        "url": "https://content.guardianapis.com/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $('Loop Users').first().json.topics.join(' OR ') }}"
+            },
+            {
+              "name": "show-fields",
+              "value": "trailText,thumbnail"
+            },
+            {
+              "name": "page-size",
+              "value": "15"
+            },
+            {
+              "name": "api-key",
+              "value": "YOUR_GUARDIAN_API_KEY"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -280,
+        0
+      ],
+      "id": "guardian-001",
+      "name": "The Guardian API"
+    },
+    {
+      "parameters": {
+        "url": "https://feeds.bbci.co.uk/news/rss.xml",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [
+        -280,
+        120
+      ],
+      "id": "rss-bbc-001",
+      "name": "RSS BBC News"
+    },
+    {
+      "parameters": {
+        "mode": "combineBySql",
+        "numberInputs": 3,
+        "query": "SELECT * FROM t1 UNION ALL SELECT * FROM t2 UNION ALL SELECT * FROM t3"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "merge-sources-001",
+      "name": "Fusionner sources"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normaliser et d\u00e9dupliquer tous les articles\nconst userData = $('Loop Users').first().json;\nconst allItems = $input.all();\n\nconst normalize = (item) => {\n  const a = item.json;\n  // NewsAPI\n  if (a.source && a.url && a.publishedAt) {\n    return {\n      title: a.title || 'Sans titre',\n      description: (a.description || a.content || '').substring(0, 400),\n      url: a.url,\n      source: a.source?.name || 'NewsAPI',\n      publishedAt: a.publishedAt\n    };\n  }\n  // Guardian\n  if (a.webUrl || a.webTitle) {\n    return {\n      title: a.webTitle || 'Sans titre',\n      description: a.fields?.trailText || '',\n      url: a.webUrl,\n      source: 'The Guardian',\n      publishedAt: a.webPublicationDate || new Date().toISOString()\n    };\n  }\n  // RSS\n  if (a.link || a.guid) {\n    return {\n      title: a.title || 'Sans titre',\n      description: a.contentSnippet || a.summary || '',\n      url: a.link || a.guid,\n      source: a.creator || 'BBC News',\n      publishedAt: a.pubDate || new Date().toISOString()\n    };\n  }\n  return null;\n};\n\nconst articles = allItems\n  .map(i => normalize(i))\n  .filter(a => a && a.url && a.title);\n\n// D\u00e9duplication par URL\nconst seen = new Set();\nconst unique = articles.filter(a => {\n  if (seen.has(a.url)) return false;\n  seen.add(a.url);\n  return true;\n});\n\n// Pr\u00e9-filtrage par topics pour \u00e9conomiser des tokens\nconst topics = userData.topics || [];\nconst filtered = unique.filter(a => {\n  if (topics.length === 0) return true;\n  const text = (a.title + ' ' + a.description).toLowerCase();\n  return topics.some(t => text.includes(t.toLowerCase()));\n});\n\n// Fact-checking crois\u00e9 : score de confirmation\nconst scored = filtered.map(a => {\n  const keywords = a.title.split(' ').filter(w => w.length > 4).slice(0, 3);\n  const confirmedBy = filtered.filter(b =>\n    b.url !== a.url &&\n    b.source !== a.source &&\n    keywords.some(kw => b.title.toLowerCase().includes(kw.toLowerCase()))\n  );\n  return { ...a, factCheckScore: confirmedBy.length };\n});\n\n// Trier par score de confirmation puis limiter\nconst final = scored\n  .sort((a, b) => b.factCheckScore - a.factCheckScore)\n  .slice(0, 25);\n\nreturn final.map(a => ({ json: { ...a, userData } }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "normalize-dedup-001",
+      "name": "Normaliser + D\u00e9dup + Fact-check"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Agr\u00e9ger tous les articles normalis\u00e9s + context utilisateur\nconst items = $input.all();\nif (items.length === 0) return [];\n\nconst userData = items[0].json.userData;\nconst articles = items.map(i => ({\n  title: i.json.title,\n  description: i.json.description,\n  url: i.json.url,\n  source: i.json.source,\n  publishedAt: i.json.publishedAt,\n  factCheckScore: i.json.factCheckScore\n}));\n\nreturn [{ json: { userData, articles } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "aggregate-001",
+      "name": "Agr\u00e9ger pour l'IA"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ 'Tu es un \u00e9diteur de newsletter expert. Voici les pr\u00e9f\u00e9rences de l\\'abonn\u00e9 :\\n\\nCentres d\\'int\u00e9r\u00eat : ' + JSON.stringify($json.userData.topics) + '\\nLangue : ' + $json.userData.language + '\\nNombre d\\'articles souhait\u00e9s : ' + $json.userData.num_articles + (($json.userData.custom_prompt) ? ('\\nInstructions personnalis\u00e9es : ' + $json.userData.custom_prompt) : '') + '\\n\\nVoici ' + $json.articles.length + ' articles disponibles aujourd\\'hui :\\n' + JSON.stringify($json.articles) + '\\n\\nS\u00e9lectionne exactement ' + $json.userData.num_articles + ' articles qui correspondent le mieux aux centres d\\'int\u00e9r\u00eat.\\nPour chaque article s\u00e9lectionn\u00e9, r\u00e9dige un r\u00e9sum\u00e9 de 2-3 phrases en ' + $json.userData.language + '.\\n\\nR\u00e9ponds UNIQUEMENT avec ce JSON valide, sans texte avant ni apr\u00e8s :\\n{\"articles\": [{\"title\": \"...\", \"summary\": \"...\", \"url\": \"...\", \"source\": \"...\"}]}' }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        660,
+        0
+      ],
+      "id": "llm-filter-001",
+      "name": "IA \u2014 Filtrage et r\u00e9sum\u00e9"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        660,
+        160
+      ],
+      "id": "llm-newsletter-001",
+      "name": "LLM Newsletter",
+      "credentials": {
+        "openRouterApi": {
+          "id": "OPENROUTER_CREDENTIAL_ID",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parser la r\u00e9ponse JSON de l'IA\nconst raw = $json.text || $json.output || '';\n\nlet parsed;\ntry {\n  const match = raw.match(/\\{[\\s\\S]*\\}/);\n  if (match) {\n    parsed = JSON.parse(match[0]);\n  }\n} catch(e) {\n  return [{ json: { error: 'Parse error: ' + e.message, raw } }];\n}\n\nif (!parsed || !parsed.articles) {\n  return [{ json: { error: 'No articles in response', raw } }];\n}\n\nconst userData = $('Loop Users').first().json;\n\nreturn [{ json: {\n  articles: parsed.articles,\n  userData,\n  user_id: userData.user_id,\n  username: userData.username,\n  email: userData.email\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ],
+      "id": "parse-ai-001",
+      "name": "Parser r\u00e9ponse IA"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "parse-ok-condition",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1100,
+        0
+      ],
+      "id": "if-parse-ok-001",
+      "name": "Parsing OK?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const articles = $json.articles;\nconst userName = $json.username;\nconst userId = $json.user_id;\nconst unsubToken = require('crypto').createHash('sha256').update(userId + 'CHANGE_ME_SECRET_SALT').digest('hex').substring(0, 16);\nconst date = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'nuuser', month: 'long', year: 'nuuser' });\n\nconst articleCards = articles.map((a, i) => `\n  <tr>\n    <td style=\"padding: 0 0 28px 0;\">\n      <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border-left: 3px solid #6366f1; padding-left: 16px;\">\n        <tr><td>\n          <p style=\"margin: 0 0 2px; font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em;\">${a.source} \u2022 Article ${i+1}</p>\n          <h2 style=\"margin: 0 0 8px; font-size: 16px; line-height: 1.4;\">\n            <a href=\"${a.url}\" style=\"color: #1e1b4b; text-decoration: none;\">${a.title}</a>\n          </h2>\n          <p style=\"margin: 0 0 10px; font-size: 14px; color: #4b5563; line-height: 1.6;\">${a.summary}</p>\n          <a href=\"${a.url}\" style=\"font-size: 13px; color: #6366f1; text-decoration: none; font-weight: 600;\">Lire l'article \u2192</a>\n        </td></tr>\n      </table>\n    </td>\n  </tr>\n`).join('');\n\nconst html = `<!DOCTYPE html>\n<html lang=\"fr\">\n<head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><title>Persona Newsletter</title></head>\n<body style=\"margin:0; padding:0; background-color:#f3f4f6; font-family: 'Helvetica Neue', Arial, sans-serif;\">\n  <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f3f4f6; padding: 32px 16px;\">\n    <tr><td align=\"center\">\n      <table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px; width:100%;\">\n        <!-- HEADER -->\n        <tr><td style=\"background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border-radius: 12px 12px 0 0; padding: 32px; text-align: center;\">\n          <p style=\"margin:0 0 4px; font-size:12px; color:rgba(255,255,255,0.7); text-transform:uppercase; letter-spacing:0.1em;\">\ud83d\udcf0 Ta newsletter personnalis\u00e9e</p>\n          <h1 style=\"margin:0 0 8px; font-size:28px; color:white; font-weight:800;\">Persona</h1>\n          <p style=\"margin:0; font-size:14px; color:rgba(255,255,255,0.85);\">${date}</p>\n        </td></tr>\n        <!-- INTRO -->\n        <tr><td style=\"background:white; padding: 32px 32px 0;\">\n          <p style=\"margin:0; font-size:16px; color:#374151;\">Bonjour <strong>${userName}</strong> \ud83d\udc4b</p>\n          <p style=\"margin:12px 0 0; font-size:14px; color:#6b7280; line-height:1.6;\">Voici ta s\u00e9lection du jour, choisie et r\u00e9sum\u00e9e par l'IA selon tes centres d'int\u00e9r\u00eat.</p>\n        </td></tr>\n        <!-- DIVIDER -->\n        <tr><td style=\"background:white; padding: 20px 32px;\"><hr style=\"border:none; border-top:1px solid #e5e7eb;\"></td></tr>\n        <!-- ARTICLES -->\n        <tr><td style=\"background:white; padding: 0 32px;\">\n          <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\">\n            ${articleCards}\n          </table>\n        </td></tr>\n        <!-- FOOTER -->\n        <tr><td style=\"background:#f9fafb; border-top:1px solid #e5e7eb; border-radius:0 0 12px 12px; padding:24px 32px; text-align:center;\">\n          <p style=\"margin:0 0 8px; font-size:12px; color:#9ca3af;\">Tu re\u00e7ois cet email car tu es abonn\u00e9(e) \u00e0 Persona.</p>\n          <p style=\"margin:0; font-size:12px; color:#9ca3af;\">\n            <a href=\"YOUR_N8N_BASE_URL/webhook/unsubscribe?uid=${userId}&token=${unsubToken}\" style=\"color:#6366f1;\">Se d\u00e9sinscrire</a>\n            &nbsp;\u2022&nbsp;\n            <a href=\"YOUR_CHATBOT_URL\" style=\"color:#6366f1;\">Modifier mes pr\u00e9f\u00e9rences</a>\n          </p>\n        </td></tr>\n      </table>\n    </td></tr>\n  </table>\n</body>\n</html>`;\n\nreturn [{ json: { html, subject: `\ud83d\udcf0 Ta newsletter Persona \u2014 ${date}`, email: $json.email, username: userName, user_id: userId, articles } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        -80
+      ],
+      "id": "build-html-001",
+      "name": "Construire email HTML"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.html }}",
+        "options": {
+          "senderName": "Persona Newsletter"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1540,
+        -80
+      ],
+      "id": "send-email-001",
+      "name": "Envoyer newsletter",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "newsletter_logs",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{ $('Construire email HTML').first().json.user_id }}"
+            },
+            {
+              "fieldId": "articles",
+              "fieldValue": "={{ JSON.stringify($('Construire email HTML').first().json.articles) }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1760,
+        -80
+      ],
+      "id": "log-send-001",
+      "name": "Logger envoi",
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -380,
+        0
+      ],
+      "id": "loop-001",
+      "name": "Loop Users"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger (toutes les heures)": {
+      "main": [
+        [
+          {
+            "node": "Calculer heure UTC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculer heure UTC": {
+      "main": [
+        [
+          {
+            "node": "Utilisateurs actifs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Utilisateurs actifs": {
+      "main": [
+        [
+          {
+            "node": "Pr\u00e9f\u00e9rences user",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pr\u00e9f\u00e9rences user": {
+      "main": [
+        [
+          {
+            "node": "A des prefs \u00e0 cet horaire?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "A des prefs \u00e0 cet horaire?": {
+      "main": [
+        [
+          {
+            "node": "Fusionner user + prefs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Fusionner user + prefs": {
+      "main": [
+        [
+          {
+            "node": "Loop Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NewsAPI": {
+      "main": [
+        [
+          {
+            "node": "Fusionner sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "The Guardian API": {
+      "main": [
+        [
+          {
+            "node": "Fusionner sources",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "RSS BBC News": {
+      "main": [
+        [
+          {
+            "node": "Fusionner sources",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Fusionner sources": {
+      "main": [
+        [
+          {
+            "node": "Normaliser + D\u00e9dup + Fact-check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normaliser + D\u00e9dup + Fact-check": {
+      "main": [
+        [
+          {
+            "node": "Agr\u00e9ger pour l'IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agr\u00e9ger pour l'IA": {
+      "main": [
+        [
+          {
+            "node": "IA \u2014 Filtrage et r\u00e9sum\u00e9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM Newsletter": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "IA \u2014 Filtrage et r\u00e9sum\u00e9",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IA \u2014 Filtrage et r\u00e9sum\u00e9": {
+      "main": [
+        [
+          {
+            "node": "Parser r\u00e9ponse IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parser r\u00e9ponse IA": {
+      "main": [
+        [
+          {
+            "node": "Parsing OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsing OK?": {
+      "main": [
+        [
+          {
+            "node": "Construire email HTML",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Construire email HTML": {
+      "main": [
+        [
+          {
+            "node": "Envoyer newsletter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envoyer newsletter": {
+      "main": [
+        [
+          {
+            "node": "Logger envoi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Users": {
+      "main": [
+        [
+          {
+            "node": "NewsAPI",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "The Guardian API",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS BBC News",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Logger envoi": {
+      "main": [
+        [
+          {
+            "node": "Loop Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "Persona"
+    }
+  ]
+}
