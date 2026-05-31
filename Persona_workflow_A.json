@@ -656,8 +656,10 @@
     },
     {
       "parameters": {
-        "operation": "update",
+        "descriptionType": "manual",
+        "toolDescription": "Marque le consentement RGPD de l'utilisateur dans la table users après confirmation explicite.",
         "tableId": "users",
+        "operation": "update",
         "filters": {
           "conditions": [
             {
@@ -680,7 +682,7 @@
           ]
         }
       },
-      "type": "n8n-nodes-base.supabase",
+      "type": "n8n-nodes-base.supabaseTool",
       "typeVersion": 1,
       "position": [
         200,
@@ -952,6 +954,17 @@
       ]
     },
     "update_custom_prompt": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent Principal (connect\u00e9)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marquer consentement RGPD": {
       "ai_tool": [
         [
           {
