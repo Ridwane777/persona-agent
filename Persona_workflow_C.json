@@ -1,5 +1,5 @@
 {
-  "name": "Persona — Workflow C (Désinscription)",
+  "name": "Persona \u2014 Workflow C (D\u00e9sinscription)",
   "nodes": [
     {
       "parameters": {
@@ -10,31 +10,46 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [-800, 0],
+      "position": [
+        -800,
+        0
+      ],
       "id": "webhook-unsub-001",
-      "name": "Webhook Désinscription",
+      "name": "Webhook D\u00e9sinscription",
       "webhookId": "persona-unsubscribe-webhook"
     },
     {
       "parameters": {
-        "jsCode": "const { uid, token } = $json.query || {};\n\nif (!uid || !token) {\n  return [{ json: { valid: false, reason: 'Paramètres manquants', uid: null } }];\n}\n\n// Recalculer le token attendu\nconst crypto = require('crypto');\nconst expectedToken = crypto.createHash('sha256')\n  .update(uid + 'CHANGE_ME_SECRET_SALT')\n  .digest('hex')\n  .substring(0, 16);\n\nconst valid = token === expectedToken;\n\nreturn [{ json: { valid, uid, reason: valid ? 'OK' : 'Token invalide' } }];"
+        "jsCode": "const { uid, token } = $json.query || {};\n\nif (!uid || !token) {\n  return [{ json: { valid: false, reason: 'Param\u00e8tres manquants', uid: null } }];\n}\n\n// Fonction de hash simple (remplace crypto qui est d\u00e9sactiv\u00e9 par d\u00e9faut)\nconst simpleHash = str => {\n  let hash = 0;\n  for (let i = 0; i < str.length; i++) {\n    hash = ((hash << 5) - hash) + str.charCodeAt(i);\n    hash |= 0;\n  }\n  return Math.abs(hash).toString(16);\n};\n\nconst expectedToken = simpleHash(uid + 'CHANGE_ME_SECRET_SALT');\nconst valid = token === expectedToken;\n\nreturn [{ json: { valid, uid, reason: valid ? 'OK' : 'Token invalide' } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-580, 0],
+      "position": [
+        -580,
+        0
+      ],
       "id": "verify-token-001",
-      "name": "Vérifier token"
+      "name": "V\u00e9rifier token"
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose", "version": 3 },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
           "conditions": [
             {
               "id": "token-valid-condition",
               "leftValue": "={{ $json.valid }}",
               "rightValue": "true",
-              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
             }
           ],
           "combinator": "and"
@@ -43,7 +58,10 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [-360, 0],
+      "position": [
+        -360,
+        0
+      ],
       "id": "if-token-valid-001",
       "name": "Token valide?"
     },
@@ -53,22 +71,40 @@
         "tableId": "users",
         "filters": {
           "conditions": [
-            { "keyName": "id", "condition": "eq", "keyValue": "={{ $json.uid }}" }
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.uid }}"
+            }
           ]
         },
         "fieldsUi": {
           "fieldValues": [
-            { "fieldId": "is_active", "fieldValue": "=false" },
-            { "fieldId": "email", "fieldValue": "={{ 'deleted_' + $json.uid + '@persona.local' }}" }
+            {
+              "fieldId": "is_active",
+              "fieldValue": "=false"
+            },
+            {
+              "fieldId": "email",
+              "fieldValue": "={{ 'deleted_' + $json.uid + '@persona.local' }}"
+            }
           ]
         }
       },
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [-140, -120],
+      "position": [
+        -140,
+        -120
+      ],
       "id": "deactivate-user-001",
-      "name": "Désactiver compte",
-      "credentials": { "supabaseApi": { "id": "SUPABASE_CREDENTIAL_ID", "name": "Supabase account" } }
+      "name": "D\u00e9sactiver compte",
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase account"
+        }
+      }
     },
     {
       "parameters": {
@@ -76,16 +112,28 @@
         "tableId": "preferences",
         "filters": {
           "conditions": [
-            { "keyName": "user_id", "condition": "eq", "keyValue": "={{ $('Vérifier token').item.json.uid }}" }
+            {
+              "keyName": "user_id",
+              "condition": "eq",
+              "keyValue": "={{ $('V\u00e9rifier token').item.json.uid }}"
+            }
           ]
         }
       },
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [80, -120],
+      "position": [
+        80,
+        -120
+      ],
       "id": "delete-prefs-001",
-      "name": "Supprimer préférences",
-      "credentials": { "supabaseApi": { "id": "SUPABASE_CREDENTIAL_ID", "name": "Supabase account" } }
+      "name": "Supprimer pr\u00e9f\u00e9rences",
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase account"
+        }
+      }
     },
     {
       "parameters": {
@@ -93,67 +141,165 @@
         "tableId": "sessions",
         "filters": {
           "conditions": [
-            { "keyName": "user_id", "condition": "eq", "keyValue": "={{ $('Vérifier token').item.json.uid }}" }
+            {
+              "keyName": "user_id",
+              "condition": "eq",
+              "keyValue": "={{ $('V\u00e9rifier token').item.json.uid }}"
+            }
           ]
         }
       },
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [300, -120],
+      "position": [
+        300,
+        -120
+      ],
       "id": "delete-sessions-001",
       "name": "Supprimer sessions",
-      "credentials": { "supabaseApi": { "id": "SUPABASE_CREDENTIAL_ID", "name": "Supabase account" } }
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase account"
+        }
+      }
     },
     {
       "parameters": {
         "respondWith": "text",
-        "responseBody": "<!DOCTYPE html><html lang=\"fr\"><head><meta charset=\"UTF-8\"><title>Désinscription confirmée</title><style>body{font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f3f4f6}.card{background:white;border-radius:12px;padding:48px;text-align:center;max-width:400px;box-shadow:0 4px 6px rgba(0,0,0,.07)}.icon{font-size:48px;margin-bottom:16px}h1{color:#1e1b4b;margin:0 0 12px}p{color:#6b7280;line-height:1.6}</style></head><body><div class=\"card\"><div class=\"icon\">✅</div><h1>Désinscription confirmée</h1><p>Tes données ont été supprimées conformément au RGPD. Tu ne recevras plus de newsletter Persona.</p><p style=\"margin-top:24px;font-size:13px\">Tu peux te réinscrire à tout moment via le chatbot.</p></div></body></html>",
+        "responseBody": "<!DOCTYPE html><html lang=\"fr\"><head><meta charset=\"UTF-8\"><title>D\u00e9sinscription confirm\u00e9e</title><style>body{font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f3f4f6}.card{background:white;border-radius:12px;padding:48px;text-align:center;max-width:400px;box-shadow:0 4px 6px rgba(0,0,0,.07)}.icon{font-size:48px;margin-bottom:16px}h1{color:#1e1b4b;margin:0 0 12px}p{color:#6b7280;line-height:1.6}</style></head><body><div class=\"card\"><div class=\"icon\">\u2705</div><h1>D\u00e9sinscription confirm\u00e9e</h1><p>Tes donn\u00e9es ont \u00e9t\u00e9 supprim\u00e9es conform\u00e9ment au RGPD. Tu ne recevras plus de newsletter Persona.</p><p style=\"margin-top:24px;font-size:13px\">Tu peux te r\u00e9inscrire \u00e0 tout moment via le chatbot.</p></div></body></html>",
         "options": {
           "responseHeaders": {
-            "entries": [{ "name": "Content-Type", "value": "text/html; charset=utf-8" }]
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
           }
         }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [520, -120],
+      "position": [
+        520,
+        -120
+      ],
       "id": "respond-success-001",
-      "name": "Répondre succès"
+      "name": "R\u00e9pondre succ\u00e8s"
     },
     {
       "parameters": {
         "respondWith": "text",
-        "responseBody": "<!DOCTYPE html><html lang=\"fr\"><head><meta charset=\"UTF-8\"><title>Erreur</title><style>body{font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f3f4f6}.card{background:white;border-radius:12px;padding:48px;text-align:center;max-width:400px;box-shadow:0 4px 6px rgba(0,0,0,.07)}.icon{font-size:48px;margin-bottom:16px}h1{color:#7f1d1d;margin:0 0 12px}p{color:#6b7280;line-height:1.6}</style></head><body><div class=\"card\"><div class=\"icon\">❌</div><h1>Lien invalide</h1><p>Ce lien de désinscription est invalide ou a déjà été utilisé.</p><p style=\"margin-top:24px;font-size:13px\">Pour te désinscrire, contacte-nous via le chatbot.</p></div></body></html>",
+        "responseBody": "<!DOCTYPE html><html lang=\"fr\"><head><meta charset=\"UTF-8\"><title>Erreur</title><style>body{font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f3f4f6}.card{background:white;border-radius:12px;padding:48px;text-align:center;max-width:400px;box-shadow:0 4px 6px rgba(0,0,0,.07)}.icon{font-size:48px;margin-bottom:16px}h1{color:#7f1d1d;margin:0 0 12px}p{color:#6b7280;line-height:1.6}</style></head><body><div class=\"card\"><div class=\"icon\">\u274c</div><h1>Lien invalide</h1><p>Ce lien de d\u00e9sinscription est invalide ou a d\u00e9j\u00e0 \u00e9t\u00e9 utilis\u00e9.</p><p style=\"margin-top:24px;font-size:13px\">Pour te d\u00e9sinscrire, contacte-nous via le chatbot.</p></div></body></html>",
         "options": {
           "responseCode": 400,
           "responseHeaders": {
-            "entries": [{ "name": "Content-Type", "value": "text/html; charset=utf-8" }]
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
           }
         }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [-140, 120],
+      "position": [
+        -140,
+        120
+      ],
       "id": "respond-error-001",
-      "name": "Répondre erreur"
+      "name": "R\u00e9pondre erreur"
     }
   ],
   "pinData": {},
   "connections": {
-    "Webhook Désinscription": { "main": [[{ "node": "Vérifier token", "type": "main", "index": 0 }]] },
-    "Vérifier token": { "main": [[{ "node": "Token valide?", "type": "main", "index": 0 }]] },
-    "Token valide?": {
+    "Webhook D\u00e9sinscription": {
       "main": [
-        [{ "node": "Désactiver compte", "type": "main", "index": 0 }],
-        [{ "node": "Répondre erreur", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "V\u00e9rifier token",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Désactiver compte": { "main": [[{ "node": "Supprimer préférences", "type": "main", "index": 0 }]] },
-    "Supprimer préférences": { "main": [[{ "node": "Supprimer sessions", "type": "main", "index": 0 }]] },
-    "Supprimer sessions": { "main": [[{ "node": "Répondre succès", "type": "main", "index": 0 }]] }
+    "V\u00e9rifier token": {
+      "main": [
+        [
+          {
+            "node": "Token valide?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Token valide?": {
+      "main": [
+        [
+          {
+            "node": "D\u00e9sactiver compte",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "R\u00e9pondre erreur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "D\u00e9sactiver compte": {
+      "main": [
+        [
+          {
+            "node": "Supprimer pr\u00e9f\u00e9rences",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supprimer pr\u00e9f\u00e9rences": {
+      "main": [
+        [
+          {
+            "node": "Supprimer sessions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supprimer sessions": {
+      "main": [
+        [
+          {
+            "node": "R\u00e9pondre succ\u00e8s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
   "active": false,
-  "settings": { "executionOrder": "v1" },
-  "meta": { "templateCredsSetupCompleted": false },
-  "tags": [{ "name": "Persona" }]
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "Persona"
+    }
+  ]
 }
