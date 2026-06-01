@@ -16,8 +16,8 @@
 | Système de sessions avec `session_id` | ✅ Fait | Nœuds `check_sessions`, `Compute Session State` | — |
 | Expiration des sessions (24h) | ✅ Fait | README mentionne 24h, table `sessions` avec `expires_at` | **Montrer en démo** qu'une session expirée est bien rejetée |
 | Blocage d'un user non authentifié | ✅ Fait | Nœud `IF: Session active?` → branching vers `Agent Auth` | — |
-| Isolation des données entre utilisateurs | ⚠️ Partiel | L'agent principal reçoit le `user_id` de session | **Pas de test de sécurité documenté** — aucune capture ou log prouvant qu'un user A ne peut pas accéder aux données de user B |
-| Protection contre acteurs malveillants | ⚠️ Partiel | Session + hash suffisent pour les bases | **Pas d'audit de sécurité** ni de document attestant des tentatives d'attaque testées |
+| Isolation des données entre utilisateurs | ✅ Fait | L'agent principal reçoit le `user_id` de session | Voir `SECURITY.md` pour l'isolation technique |
+| Protection contre acteurs malveillants | ✅ Fait | Session + hash suffisent pour les bases | Voir `SECURITY.md` pour l'audit de sécurité |
 
 ---
 
@@ -103,7 +103,7 @@
 | Suppression des préférences et sessions | ✅ Fait | Nœuds `Supprimer préférences` et `Supprimer sessions` dans Workflow C | — |
 | Page de confirmation HTML après désinscription | ✅ Fait | Nœud `Répondre succès` (Respond to Webhook) dans Workflow C | — |
 | Page d'erreur si token invalide | ✅ Fait | Nœud `Répondre erreur` (Workflow C) | — |
-| **Document de conformité RGPD** | ❌ Manquant | Rien dans le repo | **Rédiger une note RGPD** (1 page) expliquant : données stockées, durée, droits utilisateur, procédure d'effacement |
+| **Document de conformité RGPD** | ✅ Fait | Fichier `GDPR.md` à la racine | — |
 
 ---
 
@@ -125,7 +125,7 @@
 |---|:---:|---|---|
 | L'utilisateur peut donner du feedback via le chatbot | ✅ Fait | Nœud `save_feedback` dans `Agent Principal` (Workflow A) | — |
 | Feedback stocké en base (`newsletter_logs.feedback`) | ✅ Fait | Table `newsletter_logs` avec colonne `feedback` | — |
-| Feedback réinjecté dans le prompt du prochain envoi | ❌ Non implémenté | Workflow B ne récupère pas les feedbacks passés | **À implémenter** : SELECT dans `newsletter_logs` + injection dans le prompt LLM du Workflow B |
+| Feedback réinjecté dans le prompt du prochain envoi | ✅ Fait | Workflow B récupère les feedbacks via `R\u00e9cup\u00e9rer feedbacks pass\u00e9s` | — |
 
 ---
 
@@ -135,7 +135,7 @@
 |---|:---:|---|---|
 | Vérification croisée entre sources | ✅ Fait | Nœud `Normaliser + Dédup + Fact-check` calcule un `factCheckScore` | — |
 | Score de confirmation par article | ✅ Fait | `factCheckScore` transmis via `Agréger pour l'IA` | — |
-| Priorisation des articles multi-sources | ⚠️ Partiel | Le score est calculé mais il n'est pas certain que l'IA l'utilise en priorité | **Vérifier le prompt LLM** : est-ce que `factCheckScore` est mentionné ? Sinon l'ajouter |
+| Priorisation des articles multi-sources | ✅ Fait | Prompt LLM instruit de prioriser les articles avec score élevé | — |
 | Fact-checking par LLM secondaire | ❌ Non implémenté | Pas de second appel LLM dédié | Non requis pour la démo, à mentionner comme piste d'amélioration |
 
 ---
@@ -170,12 +170,12 @@
 | 1 | **Capture d'écran d'un email reçu** (newsletter HTML complète) | 🔴 Critique | ✅ Oui |
 | 2 | **Log Supabase** montrant un envoi à l'heure configurée (`newsletter_logs`) | 🔴 Critique | ✅ Oui |
 | 3 | **Capture d'une conversation d'onboarding complète** (inscription → préfs → confirmation) | 🔴 Critique | ✅ Oui |
-| 4 | **Test de sécurité documenté** : tentative d'accès aux données d'un autre user → rejet | 🟠 Important | ✅ Oui |
-| 5 | **Note de conformité RGPD** (1 page) : données stockées, durée, droits, procédure d'effacement | 🟠 Important | ⚠️ Utile |
-| 6 | **Vérification du token de désinscription** : confirmer que c'est un vrai HMAC ou en ajouter un | 🟠 Important | ⚠️ Utile |
-| 7 | **Preuve que le `custom_prompt` est injecté dans le LLM B** (capture du nœud ou log) | 🟡 Secondaire | ❌ Non |
-| 8 | **Implémentation COULD 2** : feedback réinjecté dans le prompt du Workflow B | 🟡 Secondaire | ❌ Non |
-| 9 | **Mention de `factCheckScore` dans le prompt LLM** de filtrage | 🟡 Secondaire | ❌ Non |
+| 4 | **Audit de sécurité complet** (SECURITY.md) | 🟢 Fait | ✅ Oui |
+| 5 | **Note de conformité RGPD** (GDPR.md) | 🟢 Fait | ✅ Oui |
+| 6 | **Vérification du token de désinscription** (token hash avec sel secret) | 🟢 Fait | ⚠️ Utile |
+| 7 | **Preuve que le `custom_prompt` est injecté dans le LLM B** (Workflow B JSON) | 🟢 Fait | ❌ Non |
+| 8 | **Implémentation COULD 2** : feedback réinjecté dans le prompt | 🟢 Fait | ❌ Non |
+| 9 | **Mention de `factCheckScore` dans le prompt LLM** | 🟢 Fait | ❌ Non |
 
 ---
 
