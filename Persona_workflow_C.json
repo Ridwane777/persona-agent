@@ -1,5 +1,5 @@
 {
-  "name": "Persona \u2014 Workflow C (D\u00e9sinscription)",
+  "name": "Persona — Workflow C (Désinscription)",
   "nodes": [
     {
       "parameters": {
@@ -15,12 +15,168 @@
         0
       ],
       "id": "webhook-unsub-001",
-      "name": "Webhook D\u00e9sinscription",
+      "name": "Webhook Désinscription",
       "webhookId": "persona-unsubscribe-webhook"
     },
     {
       "parameters": {
-        "jsCode": "const { uid, token } = $json.query || {};\n\nif (!uid || !token) {\n  return [{ json: { valid: false, reason: 'Param\u00e8tres manquants', uid: null } }];\n}\n\n// Fonction de hash simple (remplace crypto qui est d\u00e9sactiv\u00e9 par d\u00e9faut)\nconst simpleHash = str => {\n  let hash = 0;\n  for (let i = 0; i < str.length; i++) {\n    hash = ((hash << 5) - hash) + str.charCodeAt(i);\n    hash |= 0;\n  }\n  return Math.abs(hash).toString(16);\n};\n\nconst expectedToken = simpleHash(uid + 'CHANGE_ME_SECRET_SALT');\nconst valid = token === expectedToken;\n\nreturn [{ json: { valid, uid, reason: valid ? 'OK' : 'Token invalide' } }];"
+        "httpMethod": "GET",
+        "path": "feedback",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        220
+      ],
+      "id": "webhook-feedback-001",
+      "name": "Webhook Feedback"
+    },
+    {
+      "parameters": {
+        "jsCode": "const { uid, token } = $json.query || {};\n\nif (!uid || !token) {\n  return [{ json: { valid: false, reason: 'Paramètres manquants', uid: null } }];\n}\n\nconst simpleHash = str => {\n  let hash = 0;\n  for (let i = 0; i < str.length; i++) {\n    hash = ((hash << 5) - hash) + str.charCodeAt(i);\n    hash |= 0;\n  }\n  return Math.abs(hash).toString(16);\n};\n\nconst expectedToken = simpleHash(uid + 'CHANGE_ME_SECRET_SALT');\nconst valid = token === expectedToken;\n\nreturn [{ json: { valid, uid, reason: valid ? 'OK' : 'Token invalide' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -580,
+        220
+      ],
+      "id": "verify-feedback-token-001",
+      "name": "Vérifier token feedback"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "token-feedback-valid-condition",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -360,
+        220
+      ],
+      "id": "if-feedback-token-valid-001",
+      "name": "Token feedback valide?"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "tableId": "newsletter_logs",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{ $('Webhook Feedback').first().json.query.uid }}"
+            },
+            {
+              "fieldId": "newsletter_id",
+              "fieldValue": "={{ $('Webhook Feedback').first().json.query.newsletter_id || null }}"
+            },
+            {
+              "fieldId": "feedback",
+              "fieldValue": "={{ $('Webhook Feedback').first().json.query.feedback || $('Webhook Feedback').first().json.query.rating || '' }}"
+            },
+            {
+              "fieldId": "feedback_source",
+              "fieldValue": "={{ 'email_link' }}"
+            },
+            {
+              "fieldId": "rating",
+              "fieldValue": "={{ $('Webhook Feedback').first().json.query.rating || null }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -140,
+        220
+      ],
+      "id": "insert-feedback-001",
+      "name": "Insérer feedback",
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "<!DOCTYPE html><html lang=\"fr\"><head><meta charset=\"UTF-8\"><title>Merci pour ton avis</title><style>body{font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f3f4f6} .card{background:white;border-radius:12px;padding:48px;text-align:center;box-shadow:0 4px 6px rgba(0,0,0,.07)} h1{margin:0 0 16px;color:#1e1b4b;} p{color:#6b7280;line-height:1.6;}</style></head><body><div class=\"card\"><h1>Merci pour ton avis</h1><p>Ton feedback a bien été enregistré. Cela aidera Persona à s'améliorer.</p></div></body></html>",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        520,
+        220
+      ],
+      "id": "respond-feedback-success-001",
+      "name": "Répondre feedback succès"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "<!DOCTYPE html><html lang=\"fr\"><head><meta charset=\"UTF-8\"><title>Feedback invalide</title><style>body{font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f3f4f6} .card{background:white;border-radius:12px;padding:48px;text-align:center;box-shadow:0 4px 6px rgba(0,0,0,.07)} h1{margin:0 0 16px;color:#7f1d1d;} p{color:#6b7280;line-height:1.6;}</style></head><body><div class=\"card\"><h1>Feedback invalide</h1><p>Ce lien de feedback est invalide ou expiré. Merci de réessayer depuis la newsletter.</p></div></body></html>",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -140,
+        380
+      ],
+      "id": "respond-feedback-error-001",
+      "name": "Répondre feedback erreur"
+    },
+    {
+      "parameters": {
+        "jsCode": "const { uid, token } = $json.query || {};\n\nif (!uid || !token) {\n  return [{ json: { valid: false, reason: 'Paramètres manquants', uid: null } }];\n}\n\n// Fonction de hash simple (remplace crypto qui est désactivé par défaut)\nconst simpleHash = str => {\n  let hash = 0;\n  for (let i = 0; i < str.length; i++) {\n    hash = ((hash << 5) - hash) + str.charCodeAt(i);\n    hash |= 0;\n  }\n  return Math.abs(hash).toString(16);\n};\n\nconst expectedToken = simpleHash(uid + 'CHANGE_ME_SECRET_SALT');\nconst valid = token === expectedToken;\n\nreturn [{ json: { valid, uid, reason: valid ? 'OK' : 'Token invalide' } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -29,7 +185,7 @@
         0
       ],
       "id": "verify-token-001",
-      "name": "V\u00e9rifier token"
+      "name": "Vérifier token"
     },
     {
       "parameters": {
@@ -98,7 +254,7 @@
         -120
       ],
       "id": "deactivate-user-001",
-      "name": "D\u00e9sactiver compte",
+      "name": "Désactiver compte",
       "credentials": {
         "supabaseApi": {
           "id": "SUPABASE_CREDENTIAL_ID",
@@ -115,7 +271,7 @@
             {
               "keyName": "user_id",
               "condition": "eq",
-              "keyValue": "={{ $('V\u00e9rifier token').item.json.uid }}"
+              "keyValue": "={{ $('Vérifier token').item.json.uid }}"
             }
           ]
         }
@@ -127,7 +283,7 @@
         -120
       ],
       "id": "delete-prefs-001",
-      "name": "Supprimer pr\u00e9f\u00e9rences",
+      "name": "Supprimer préférences",
       "credentials": {
         "supabaseApi": {
           "id": "SUPABASE_CREDENTIAL_ID",
@@ -144,7 +300,7 @@
             {
               "keyName": "user_id",
               "condition": "eq",
-              "keyValue": "={{ $('V\u00e9rifier token').item.json.uid }}"
+              "keyValue": "={{ $('Vérifier token').item.json.uid }}"
             }
           ]
         }
@@ -167,7 +323,7 @@
     {
       "parameters": {
         "respondWith": "text",
-        "responseBody": "<!DOCTYPE html><html lang=\"fr\"><head><meta charset=\"UTF-8\"><title>D\u00e9sinscription confirm\u00e9e</title><style>body{font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f3f4f6}.card{background:white;border-radius:12px;padding:48px;text-align:center;max-width:400px;box-shadow:0 4px 6px rgba(0,0,0,.07)}.icon{font-size:48px;margin-bottom:16px}h1{color:#1e1b4b;margin:0 0 12px}p{color:#6b7280;line-height:1.6}</style></head><body><div class=\"card\"><div class=\"icon\">\u2705</div><h1>D\u00e9sinscription confirm\u00e9e</h1><p>Tes donn\u00e9es ont \u00e9t\u00e9 supprim\u00e9es conform\u00e9ment au RGPD. Tu ne recevras plus de newsletter Persona.</p><p style=\"margin-top:24px;font-size:13px\">Tu peux te r\u00e9inscrire \u00e0 tout moment via le chatbot.</p></div></body></html>",
+        "responseBody": "<!DOCTYPE html><html lang=\"fr\"><head><meta charset=\"UTF-8\"><title>Désinscription confirmée</title><style>body{font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f3f4f6}.card{background:white;border-radius:12px;padding:48px;text-align:center;max-width:400px;box-shadow:0 4px 6px rgba(0,0,0,.07)}.icon{font-size:48px;margin-bottom:16px}h1{color:#1e1b4b;margin:0 0 12px}p{color:#6b7280;line-height:1.6}</style></head><body><div class=\"card\"><div class=\"icon\">✅</div><h1>Désinscription confirmée</h1><p>Tes données ont été supprimées conformément au RGPD. Tu ne recevras plus de newsletter Persona.</p><p style=\"margin-top:24px;font-size:13px\">Tu peux te réinscrire à tout moment via le chatbot.</p></div></body></html>",
         "options": {
           "responseHeaders": {
             "entries": [
@@ -186,12 +342,12 @@
         -120
       ],
       "id": "respond-success-001",
-      "name": "R\u00e9pondre succ\u00e8s"
+      "name": "Répondre succès"
     },
     {
       "parameters": {
         "respondWith": "text",
-        "responseBody": "<!DOCTYPE html><html lang=\"fr\"><head><meta charset=\"UTF-8\"><title>Erreur</title><style>body{font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f3f4f6}.card{background:white;border-radius:12px;padding:48px;text-align:center;max-width:400px;box-shadow:0 4px 6px rgba(0,0,0,.07)}.icon{font-size:48px;margin-bottom:16px}h1{color:#7f1d1d;margin:0 0 12px}p{color:#6b7280;line-height:1.6}</style></head><body><div class=\"card\"><div class=\"icon\">\u274c</div><h1>Lien invalide</h1><p>Ce lien de d\u00e9sinscription est invalide ou a d\u00e9j\u00e0 \u00e9t\u00e9 utilis\u00e9.</p><p style=\"margin-top:24px;font-size:13px\">Pour te d\u00e9sinscrire, contacte-nous via le chatbot.</p></div></body></html>",
+        "responseBody": "<!DOCTYPE html><html lang=\"fr\"><head><meta charset=\"UTF-8\"><title>Erreur</title><style>body{font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f3f4f6}.card{background:white;border-radius:12px;padding:48px;text-align:center;max-width:400px;box-shadow:0 4px 6px rgba(0,0,0,.07)}.icon{font-size:48px;margin-bottom:16px}h1{color:#7f1d1d;margin:0 0 12px}p{color:#6b7280;line-height:1.6}</style></head><body><div class=\"card\"><div class=\"icon\">❌</div><h1>Lien invalide</h1><p>Ce lien de désinscription est invalide ou a déjà été utilisé.</p><p style=\"margin-top:24px;font-size:13px\">Pour te désinscrire, contacte-nous via le chatbot.</p></div></body></html>",
         "options": {
           "responseCode": 400,
           "responseHeaders": {
@@ -211,23 +367,23 @@
         120
       ],
       "id": "respond-error-001",
-      "name": "R\u00e9pondre erreur"
+      "name": "Répondre erreur"
     }
   ],
   "pinData": {},
   "connections": {
-    "Webhook D\u00e9sinscription": {
+    "Webhook Désinscription": {
       "main": [
         [
           {
-            "node": "V\u00e9rifier token",
+            "node": "Vérifier token",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "V\u00e9rifier token": {
+    "Vérifier token": {
       "main": [
         [
           {
@@ -242,32 +398,32 @@
       "main": [
         [
           {
-            "node": "D\u00e9sactiver compte",
+            "node": "Désactiver compte",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "R\u00e9pondre erreur",
+            "node": "Répondre erreur",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "D\u00e9sactiver compte": {
+    "Désactiver compte": {
       "main": [
         [
           {
-            "node": "Supprimer pr\u00e9f\u00e9rences",
+            "node": "Supprimer préférences",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Supprimer pr\u00e9f\u00e9rences": {
+    "Supprimer préférences": {
       "main": [
         [
           {
@@ -282,7 +438,58 @@
       "main": [
         [
           {
-            "node": "R\u00e9pondre succ\u00e8s",
+            "node": "Répondre succès",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Feedback": {
+      "main": [
+        [
+          {
+            "node": "Vérifier token feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vérifier token feedback": {
+      "main": [
+        [
+          {
+            "node": "Token feedback valide?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Token feedback valide?": {
+      "main": [
+        [
+          {
+            "node": "Insérer feedback",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Répondre feedback erreur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insérer feedback": {
+      "main": [
+        [
+          {
+            "node": "Répondre feedback succès",
             "type": "main",
             "index": 0
           }

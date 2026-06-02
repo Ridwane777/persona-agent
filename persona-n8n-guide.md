@@ -135,11 +135,16 @@ CREATE TABLE preferences (
 
 ```sql
 CREATE TABLE newsletter_logs (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id     UUID REFERENCES users(id),
-  sent_at     TIMESTAMP DEFAULT now(),
-  articles    JSONB,                    -- les articles envoyés
-  feedback    TEXT                      -- COULD 2
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID REFERENCES users(id) ON DELETE CASCADE,
+  newsletter_id   VARCHAR(255),           -- lien trackable / email feedback
+  sent_at         TIMESTAMP DEFAULT now(),
+  articles        JSONB,                  -- les articles envoyés
+  feedback        TEXT,                   -- commentaire libre
+  feedback_source VARCHAR(50) CHECK (feedback_source IN ('chat', 'email_link')),
+  rating          VARCHAR(50) CHECK (rating IN ('good', 'bad')),
+  created_at      TIMESTAMP DEFAULT now(),
+  updated_at      TIMESTAMP DEFAULT now()
 );
 ```
 
@@ -148,7 +153,7 @@ CREATE TABLE newsletter_logs (
 ```sql
 CREATE TABLE sessions (
   session_id   TEXT PRIMARY KEY,        -- identifiant de la session chatbot
-  user_id      UUID REFERENCES users(id),
+  user_id      UUID REFERENCES users(id) ON DELETE CASCADE,
   created_at   TIMESTAMP DEFAULT now(),
   expires_at   TIMESTAMP
 );
@@ -594,6 +599,12 @@ Ajoute en bas de chaque newsletter :
 
 ```
 Pour vous désinscrire : https://ton-n8n.com/webhook/unsubscribe?uid={{ userId }}&token={{ token }}
+
+Et pour le feedback email, ajoutez aussi dans le footer :
+
+```
+J'ai aimé : https://ton-n8n.com/webhook/feedback?uid={{ userId }}&token={{ token }}&newsletter_id={{ newsletterId }}&rating=good
+Je n'ai pas aimé : https://ton-n8n.com/webhook/feedback?uid={{ userId }}&token={{ token }}&newsletter_id={{ newsletterId }}&rating=bad
 ```
 
 Puis crée un **Workflow C** avec un **Webhook Trigger** :

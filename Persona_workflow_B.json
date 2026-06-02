@@ -1,5 +1,5 @@
 {
-  "name": "Persona \u2014 Workflow B (Newsletter)",
+  "name": "Persona — Workflow B (Newsletter)",
   "nodes": [
     {
       "parameters": {
@@ -74,7 +74,7 @@
             {
               "keyName": "user_id",
               "condition": "eq",
-              "keyValue": "={{ $json.id }}"
+              "keyValue": "={{ $json.id || $json.user_id }}"
             }
           ]
         },
@@ -89,7 +89,7 @@
         0
       ],
       "id": "get-user-prefs-001",
-      "name": "Pr\u00e9f\u00e9rences user",
+      "name": "Préférences user",
       "alwaysOutputData": true,
       "credentials": {
         "supabaseApi": {
@@ -130,11 +130,11 @@
         0
       ],
       "id": "if-has-prefs-001",
-      "name": "A des prefs \u00e0 cet horaire?"
+      "name": "A des prefs à cet horaire?"
     },
     {
       "parameters": {
-        "jsCode": "// Les donn\u00e9es viennent du n\u0153ud pr\u00e9c\u00e9dent\nconst prefs = $input.item.json;\nconst user = $('Loop Users').first().json;\n\nlet topicsArray = [];\nif (Array.isArray(prefs.topics)) {\n  topicsArray = prefs.topics;\n} else if (typeof prefs.topics === 'string') {\n  topicsArray = prefs.topics.replace(/^{|}$/g, '').split(',').map(t => t.trim()).filter(Boolean);\n} else {\n  topicsArray = [\"actualit\u00e9\"];\n}\n\nreturn [{\n  json: {\n    user_id: user.id,\n    username: user.username,\n    email: user.email,\n    topics: topicsArray,\n    language: prefs.language || 'fr',\n    num_articles: prefs.num_articles || 5,\n    custom_prompt: prefs.custom_prompt || null,\n    schedule_time: prefs.schedule_time || null\n  }\n}];"
+        "jsCode": "// Les données viennent du nœud précédent\nconst prefs = $input.item.json;\nconst user = $('Loop Users').first().json;\n\nlet topicsArray = [];\nif (Array.isArray(prefs.topics)) {\n  topicsArray = prefs.topics;\n} else if (typeof prefs.topics === 'string') {\n  topicsArray = prefs.topics.replace(/^{|}$/g, '').split(',').map(t => t.trim()).filter(Boolean);\n} else {\n  topicsArray = [\"actualité\"];\n}\n\nif (topicsArray.length === 0) {\n  topicsArray = [\"actualité\"];\n}\n\nreturn [{\n  json: {\n    user_id: user.id,\n    username: user.username,\n    email: user.email,\n    topics: topicsArray,\n    language: prefs.language || 'fr',\n    num_articles: prefs.num_articles || 5,\n    custom_prompt: prefs.custom_prompt || null,\n    schedule_time: prefs.schedule_time || null\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -192,7 +192,7 @@
           "parameters": [
             {
               "name": "q",
-              "value": "={{ $('Loop Users').first().json.topics.join(' OR ') }}"
+              "value": "={{ $json.topics.join(' OR ') }}"
             },
             {
               "name": "show-fields",
@@ -250,7 +250,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Normaliser et d\u00e9dupliquer tous les articles\nconst userData = $('Loop Users').first().json;\nconst allItems = $input.all();\n\nlet rawArticles = [];\n\nfor (const item of allItems) {\n  const data = item.json;\n  \n  // NewsAPI (retourne un objet avec un tableau 'articles')\n  if (data.articles && Array.isArray(data.articles)) {\n    data.articles.forEach(a => rawArticles.push(a));\n  }\n  // Guardian (retourne un objet avec response.results)\n  else if (data.response && data.response.results && Array.isArray(data.response.results)) {\n    data.response.results.forEach(a => rawArticles.push(a));\n  }\n  // RSS ou article individuel\n  else {\n    rawArticles.push(data);\n  }\n}\n\nconst normalize = (a) => {\n  // NewsAPI\n  if (a.source && a.url && a.publishedAt) {\n    return {\n      title: a.title || 'Sans titre',\n      description: (a.description || a.content || '').substring(0, 400),\n      url: a.url,\n      source: a.source?.name || 'NewsAPI',\n      publishedAt: a.publishedAt\n    };\n  }\n  // Guardian\n  if (a.webUrl || a.webTitle) {\n    return {\n      title: a.webTitle || 'Sans titre',\n      description: a.fields?.trailText || '',\n      url: a.webUrl,\n      source: 'The Guardian',\n      publishedAt: a.webPublicationDate || new Date().toISOString()\n    };\n  }\n  // RSS\n  if (a.link || a.guid) {\n    return {\n      title: a.title || 'Sans titre',\n      description: a.contentSnippet || a.summary || '',\n      url: a.link || a.guid,\n      source: a.creator || 'BBC News',\n      publishedAt: a.pubDate || new Date().toISOString()\n    };\n  }\n  return null;\n};\n\nconst articles = rawArticles\n  .map(a => normalize(a))\n  .filter(a => a && a.url && a.title);\n\n// D\u00e9duplication par URL\nconst seen = new Set();\nconst unique = articles.filter(a => {\n  if (seen.has(a.url)) return false;\n  seen.add(a.url);\n  return true;\n});\n\n// Pr\u00e9-filtrage par topics pour \u00e9conomiser des tokens\nlet topics = userData.topics || [];\nif (typeof topics === 'string') {\n  topics = topics.replace(/^{|}$/g, '').split(',').map(t => t.trim()).filter(Boolean);\n}\nconst filtered = unique.filter(a => {\n  if (topics.length === 0) return true;\n  const text = (a.title + ' ' + (a.description || '')).toLowerCase();\n  return topics.some(t => text.includes(t.toLowerCase()));\n});\n\n// Fact-checking crois\u00e9 : score de confirmation\nconst scored = filtered.map(a => {\n  const keywords = a.title.split(' ').filter(w => w.length > 4).slice(0, 3);\n  const confirmedBy = filtered.filter(b =>\n    b.url !== a.url &&\n    b.source !== a.source &&\n    keywords.some(kw => b.title.toLowerCase().includes(kw.toLowerCase()))\n  );\n  return { ...a, factCheckScore: confirmedBy.length };\n});\n\n// Trier par score de confirmation puis limiter\nconst final = scored\n  .sort((a, b) => b.factCheckScore - a.factCheckScore)\n  .slice(0, 25);\n\nif (final.length === 0) {\n  // Toujours renvoyer un item m\u00eame vide pour ne pas casser le flow\n  return [{ json: { articles: [], userData, message: \"Aucun article trouv\u00e9\" } }];\n}\n\nreturn final.map(a => ({ json: { ...a, userData } }));"
+        "jsCode": "// Normaliser et dédupliquer tous les articles\nconst userData = $('Loop Users').first().json;\nconst allItems = $input.all();\n\nlet rawArticles = [];\n\nfor (const item of allItems) {\n  const data = item.json;\n  \n  // NewsAPI (retourne un objet avec un tableau 'articles')\n  if (data.articles && Array.isArray(data.articles)) {\n    data.articles.forEach(a => rawArticles.push(a));\n  }\n  // Guardian (retourne un objet avec response.results)\n  else if (data.response && data.response.results && Array.isArray(data.response.results)) {\n    data.response.results.forEach(a => rawArticles.push(a));\n  }\n  // RSS ou article individuel\n  else {\n    rawArticles.push(data);\n  }\n}\n\nconst normalize = (a) => {\n  // NewsAPI\n  if (a.source && a.url && a.publishedAt) {\n    return {\n      title: a.title || 'Sans titre',\n      description: (a.description || a.content || '').substring(0, 400),\n      url: a.url,\n      source: a.source?.name || 'NewsAPI',\n      publishedAt: a.publishedAt\n    };\n  }\n  // Guardian\n  if (a.webUrl || a.webTitle) {\n    return {\n      title: a.webTitle || 'Sans titre',\n      description: a.fields?.trailText || '',\n      url: a.webUrl,\n      source: 'The Guardian',\n      publishedAt: a.webPublicationDate || new Date().toISOString()\n    };\n  }\n  // RSS\n  if (a.link || a.guid) {\n    return {\n      title: a.title || 'Sans titre',\n      description: a.contentSnippet || a.summary || '',\n      url: a.link || a.guid,\n      source: a.creator || 'BBC News',\n      publishedAt: a.pubDate || new Date().toISOString()\n    };\n  }\n  return null;\n};\n\nconst articles = rawArticles\n  .map(a => normalize(a))\n  .filter(a => a && a.url && a.title);\n\n// Déduplication par URL\nconst seen = new Set();\nconst unique = articles.filter(a => {\n  if (seen.has(a.url)) return false;\n  seen.add(a.url);\n  return true;\n});\n\n// Pré-filtrage par topics pour économiser des tokens\nlet topics = userData.topics || [];\nif (typeof topics === 'string') {\n  topics = topics.replace(/^{|}$/g, '').split(',').map(t => t.trim()).filter(Boolean);\n}\nconst filtered = unique.filter(a => {\n  if (topics.length === 0) return true;\n  const text = (a.title + ' ' + (a.description || '')).toLowerCase();\n  return topics.some(t => text.includes(t.toLowerCase()));\n});\n\n// Fact-checking croisé : score de confirmation\nconst scored = filtered.map(a => {\n  const keywords = a.title.split(' ').filter(w => w.length > 4).slice(0, 3);\n  const confirmedBy = filtered.filter(b =>\n    b.url !== a.url &&\n    b.source !== a.source &&\n    keywords.some(kw => b.title.toLowerCase().includes(kw.toLowerCase()))\n  );\n  return { ...a, factCheckScore: confirmedBy.length };\n});\n\n// Trier par score de confirmation puis limiter\nconst final = scored\n  .sort((a, b) => b.factCheckScore - a.factCheckScore)\n  .slice(0, 25);\n\nif (final.length === 0) {\n  // Toujours renvoyer un item même vide pour ne pas casser le flow\n  return [{ json: { articles: [], userData, message: \"Aucun article trouvé\" } }];\n}\n\nreturn final.map(a => ({ json: { ...a, userData } }));"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -259,7 +259,7 @@
         0
       ],
       "id": "normalize-dedup-001",
-      "name": "Normaliser + D\u00e9dup + Fact-check"
+      "name": "Normaliser + Dédup + Fact-check"
     },
     {
       "parameters": {
@@ -274,7 +274,8 @@
             },
             {
               "keyName": "feedback",
-              "condition": "notEmpty"
+              "condition": "neq",
+              "keyValue": "={{ '' }}"
             }
           ]
         },
@@ -295,7 +296,7 @@
         150
       ],
       "id": "get-feedbacks-001",
-      "name": "R\u00e9cup\u00e9rer feedbacks pass\u00e9s",
+      "name": "Récupérer feedbacks passés",
       "credentials": {
         "supabaseApi": {
           "id": "SUPABASE_CREDENTIAL_ID",
@@ -306,7 +307,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Agr\u00e9ger tous les articles normalis\u00e9s + context utilisateur + feedback\nconst items = $input.all();\nif (items.length === 0) return [];\n\nconst userData = $('Fusionner user + prefs').first().json;\nconst feedbacks = $('R\u00e9cup\u00e9rer feedbacks pass\u00e9s').all().map(i => i.json.feedback).filter(Boolean);\n\nconst articles = items.map(i => ({\n  title: i.json.title,\n  description: i.json.description,\n  url: i.json.url,\n  source: i.json.source,\n  publishedAt: i.json.publishedAt,\n  factCheckScore: i.json.factCheckScore\n}));\n\nreturn [{ json: { userData, articles, feedbacks } }];"
+        "jsCode": "// Agréger tous les articles normalisés + context utilisateur + feedback\nconst items = $input.all();\nif (items.length === 0) return [];\n\nconst userData = $('Fusionner user + prefs').first().json;\nlet feedbacks = [];\ntry {\n  const feedbackItems = $('Récupérer feedbacks passés').all();\n  if (Array.isArray(feedbackItems)) {\n    feedbacks = feedbackItems.map(i => i.json?.feedback).filter(Boolean);\n  }\n} catch (error) {\n  feedbacks = [];\n}\n\nconst articles = items.map(i => ({\n  title: i.json.title,\n  description: i.json.description,\n  url: i.json.url,\n  source: i.json.source,\n  publishedAt: i.json.publishedAt,\n  factCheckScore: i.json.factCheckScore\n}));\n\nreturn [{ json: { userData, articles, feedbacks } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -315,12 +316,12 @@
         0
       ],
       "id": "aggregate-001",
-      "name": "Agr\u00e9ger pour l'IA"
+      "name": "Agréger pour l'IA"
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "={{ 'Tu es un \u00e9diteur de newsletter expert. Voici les pr\u00e9f\u00e9rences de l\\'abonn\u00e9 :\\n\\nCentres d\\'int\u00e9r\u00eat : ' + JSON.stringify($json.userData.topics) + '\\nLangue : ' + $json.userData.language + '\\nNombre d\\'articles souhait\u00e9s : ' + $json.userData.num_articles + (($json.userData.custom_prompt) ? ('\\nInstructions personnalis\u00e9es : ' + $json.userData.custom_prompt) : '') + ($json.feedbacks.length > 0 ? ('\\n\\nRetours sur les pr\u00e9c\u00e9dent envoi (TR\u00c8S IMPORTANT) :\\n' + $json.feedbacks.join('\\n')) : '') + '\\n\\nVoici ' + $json.articles.length + ' articles disponibles aujourd\\'hui (chaque article a un factCheckScore de 1 \u00e0 3, priorise les scores \u00e9lev\u00e9s) :\\n' + JSON.stringify($json.articles) + '\\n\\nS\u00e9lectionne exactement ' + $json.userData.num_articles + ' articles qui correspondent le mieux aux centres d\\'int\u00e9r\u00eat et aux retours pr\u00e9c\u00e9dents.\\nPour chaque article s\u00e9lectionn\u00e9, r\u00e9dige un r\u00e9sum\u00e9 de 2-3 phrases en ' + $json.userData.language + '.\\n\\nR\u00e9ponds UNIQUEMENT avec ce JSON valide, sans texte avant ni apr\u00e8s :\\n{\"articles\": [{\"title\": \"...\", \"summary\": \"...\", \"url\": \"...\", \"source\": \"...\"}]}' }}",
+        "text": "={{ 'Tu es un éditeur de newsletter expert. Voici les préférences de l\\'abonné :\\n\\nCentres d\\'intérêt : ' + JSON.stringify($json.userData.topics) + '\\nLangue : ' + $json.userData.language + '\\nNombre d\\'articles souhaités : ' + $json.userData.num_articles + (($json.userData.custom_prompt) ? ('\\nInstructions personnalisées : ' + $json.userData.custom_prompt) : '') + (($json.feedbacks && $json.feedbacks.length > 0) ? ('\\n\\nRetours sur les précédent envoi (TRÈS IMPORTANT) :\\n' + $json.feedbacks.join('\\n')) : '') + '\\n\\nVoici ' + $json.articles.length + ' articles disponibles aujourd\\'hui (chaque article a un factCheckScore de 1 à 3, priorise les scores élevés) :\\n' + JSON.stringify($json.articles) + '\\n\\nSélectionne exactement ' + $json.userData.num_articles + ' articles qui correspondent le mieux aux centres d\\'intérêt et aux retours précédents.\\nPour chaque article sélectionné, rédige un résumé de 2-3 phrases en ' + $json.userData.language + '.\\n\\nRéponds UNIQUEMENT avec ce JSON valide, sans texte avant ni après :\\n{\"articles\": [{\"title\": \"...\", \"summary\": \"...\", \"url\": \"...\", \"source\": \"...\"}]}' }}",
         "options": {}
       },
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
@@ -330,7 +331,7 @@
         0
       ],
       "id": "llm-filter-001",
-      "name": "IA \u2014 Filtrage et r\u00e9sum\u00e9"
+      "name": "IA — Filtrage et résumé"
     },
     {
       "parameters": {
@@ -354,7 +355,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Parser la r\u00e9ponse JSON de l'IA\nconst raw = $json.text || $json.output || '';\n\n// R\u00e9cup\u00e9rer les donn\u00e9es fusionn\u00e9es (email, username, num_articles, etc.)\nconst fusionData = $('Fusionner user + prefs').first().json;\nconst limit = parseInt(fusionData.num_articles) || 5;\n\n// R\u00e9cup\u00e9rer les articles ORIGINAUX depuis Agr\u00e9ger (fallback garanti)\nconst originalArticles = ($('Agr\u00e9ger pour l\\'IA').first().json.articles || []).map(a => ({\n  title: a.title,\n  summary: a.description || '',\n  url: a.url,\n  source: a.source\n}));\n\nlet parsedArticles = [];\ntry {\n  const match = raw.match(/\\{[\\s\\S]*\\}/);\n  if (match) {\n    const parsed = JSON.parse(match[0]);\n    if (parsed && Array.isArray(parsed.articles) && parsed.articles.length > 0) {\n      parsedArticles = parsed.articles;\n    }\n  }\n} catch(e) {\n  // Parsing failed, will use fallback\n}\n\n// Utiliser les articles de l'IA si disponibles, sinon les originaux\n// Dans les deux cas, respecter la limite num_articles\nconst finalArticles = (parsedArticles.length > 0 ? parsedArticles : originalArticles).slice(0, limit);\n\nreturn [{ json: {\n  articles: finalArticles,\n  userData: fusionData,\n  user_id: fusionData.user_id,\n  username: fusionData.username,\n  email: fusionData.email\n} }];"
+        "jsCode": "// Parser la réponse JSON de l'IA\nconst raw = $json.text || $json.output || '';\n\n// Récupérer les données fusionnées (email, username, num_articles, etc.)\nconst fusionData = $('Fusionner user + prefs').first().json;\nconst limit = parseInt(fusionData.num_articles) || 5;\n\n// Récupérer les articles ORIGINAUX depuis Agréger (fallback garanti)\nconst originalArticles = ($('Agréger pour l\\'IA').first().json.articles || []).map(a => ({\n  title: a.title,\n  summary: a.description || '',\n  url: a.url,\n  source: a.source\n}));\n\nlet parsedArticles = [];\ntry {\n  const match = raw.match(/\\{[\\s\\S]*\\}/);\n  if (match) {\n    const parsed = JSON.parse(match[0]);\n    if (parsed && Array.isArray(parsed.articles) && parsed.articles.length > 0) {\n      parsedArticles = parsed.articles;\n    }\n  }\n} catch(e) {\n  // Parsing failed, will use fallback\n}\n\n// Utiliser les articles de l'IA si disponibles, sinon les originaux\n// Dans les deux cas, respecter la limite num_articles\nconst finalArticles = (parsedArticles.length > 0 ? parsedArticles : originalArticles).slice(0, limit);\n\nreturn [{ json: {\n  articles: finalArticles,\n  userData: fusionData,\n  user_id: fusionData.user_id,\n  username: fusionData.username,\n  email: fusionData.email\n} }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -363,7 +364,7 @@
         0
       ],
       "id": "parse-ai-001",
-      "name": "Parser r\u00e9ponse IA"
+      "name": "Parser réponse IA"
     },
     {
       "parameters": {
@@ -401,7 +402,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const articles = $json.articles;\nconst userData = $json.userData || $json;\nconst userName = userData.username || $json.username;\nconst userId = userData.id || userData.user_id || $json.user_id;\nconst unsubToken = Math.abs((userId + 'CHANGE_ME_SECRET_SALT').split('').reduce((a,b)=>{a=((a<<5)-a)+b.charCodeAt(0);return a&a},0)).toString(16);\nconst date = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'nuuser', month: 'long', year: 'nuuser' });\n\nconst articleCards = articles.map((a, i) => `\n  <tr>\n    <td style=\"padding: 0 0 28px 0;\">\n      <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border-left: 3px solid #6366f1; padding-left: 16px;\">\n        <tr><td>\n          <p style=\"margin: 0 0 2px; font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em;\">${a.source} \u2022 Article ${i+1}</p>\n          <h2 style=\"margin: 0 0 8px; font-size: 16px; line-height: 1.4;\">\n            <a href=\"${a.url}\" style=\"color: #1e1b4b; text-decoration: none;\">${a.title}</a>\n          </h2>\n          <p style=\"margin: 0 0 10px; font-size: 14px; color: #4b5563; line-height: 1.6;\">${a.summary || a.description || ''}</p>\n          <a href=\"${a.url}\" style=\"font-size: 13px; color: #6366f1; text-decoration: none; font-weight: 600;\">Lire l'article \u2192</a>\n        </td></tr>\n      </table>\n    </td>\n  </tr>\n`).join('');\n\nconst html = `<!DOCTYPE html>\n<html lang=\"fr\">\n<head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><title>Persona Newsletter</title></head>\n<body style=\"margin:0; padding:0; background-color:#f3f4f6; font-family: 'Helvetica Neue', Arial, sans-serif;\">\n  <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f3f4f6; padding: 32px 16px;\">\n    <tr><td align=\"center\">\n      <table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px; width:100%;\">\n        <!-- HEADER -->\n        <tr><td style=\"background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border-radius: 12px 12px 0 0; padding: 32px; text-align: center;\">\n          <p style=\"margin:0 0 4px; font-size:12px; color:rgba(255,255,255,0.7); text-transform:uppercase; letter-spacing:0.1em;\">\ud83d\udcf0 Ta newsletter personnalis\u00e9e</p>\n          <h1 style=\"margin:0 0 8px; font-size:28px; color:white; font-weight:800;\">Persona</h1>\n          <p style=\"margin:0; font-size:14px; color:rgba(255,255,255,0.85);\">${date}</p>\n        </td></tr>\n        <!-- INTRO -->\n        <tr><td style=\"background:white; padding: 32px 32px 0;\">\n          <p style=\"margin:0; font-size:16px; color:#374151;\">Bonjour <strong>${userName}</strong> \ud83d\udc4b</p>\n          <p style=\"margin:12px 0 0; font-size:14px; color:#6b7280; line-height:1.6;\">Voici ta s\u00e9lection du jour, choisie et r\u00e9sum\u00e9e par l'IA selon tes centres d'int\u00e9r\u00eat.</p>\n        </td></tr>\n        <!-- DIVIDER -->\n        <tr><td style=\"background:white; padding: 20px 32px;\"><hr style=\"border:none; border-top:1px solid #e5e7eb;\"></td></tr>\n        <!-- ARTICLES -->\n        <tr><td style=\"background:white; padding: 0 32px;\">\n          <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\">\n            ${articleCards}\n          </table>\n        </td></tr>\n        <!-- FOOTER -->\n        <tr><td style=\"background:#f9fafb; border-top:1px solid #e5e7eb; border-radius:0 0 12px 12px; padding:24px 32px; text-align:center;\">\n          <p style=\"margin:0 0 8px; font-size:12px; color:#9ca3af;\">Tu re\u00e7ois cet email car tu es abonn\u00e9(e) \u00e0 Persona.</p>\n          <p style=\"margin:0; font-size:12px; color:#9ca3af;\">\n            <a href=\"http://localhost:5678/webhook/unsubscribe?uid=${userId}&token=${unsubToken}\" style=\"color:#6366f1;\">Se d\u00e9sinscrire</a>\n            &nbsp;\u2022&nbsp;\n            <a href=\"http://localhost:5678/webhook/persona-chatbot-webhook-001/chat\" style=\"color:#6366f1;\">Modifier mes pr\u00e9f\u00e9rences</a>\n          </p>\n        </td></tr>\n      </table>\n    </td></tr>\n  </table>\n</body>\n</html>`;\n\nreturn [{ json: { html, subject: `\ud83d\udcf0 Ta newsletter Persona \u2014 ${date}`, email: $json.email, username: userName, user_id: userId, articles } }];"
+        "jsCode": "const articles = $json.articles;\nconst userData = $json.userData || $json;\nconst userName = userData.username || $json.username;\nconst userId = userData.id || userData.user_id || $json.user_id;\nconst newsletterId = Math.random().toString(36).slice(2, 12);\nconst unsubToken = Math.abs((userId + 'CHANGE_ME_SECRET_SALT').split('').reduce((a,b)=>{a=((a<<5)-a)+b.charCodeAt(0);return a&a},0)).toString(16);\nconst feedbackBaseUrl = 'http://localhost:5678/webhook/feedback';\nconst feedbackLinkGood = `${feedbackBaseUrl}?uid=${userId}&token=${unsubToken}&newsletter_id=${newsletterId}&rating=good&feedback=good`;\nconst feedbackLinkBad = `${feedbackBaseUrl}?uid=${userId}&token=${unsubToken}&newsletter_id=${newsletterId}&rating=bad&feedback=bad`;\nconst date = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'nuuser', month: 'long', year: 'nuuser' });\n\nconst articleCards = articles.map((a, i) => `\n  <tr>\n    <td style=\"padding: 0 0 28px 0;\">\n      <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border-left: 3px solid #6366f1; padding-left: 16px;\">\n        <tr><td>\n          <p style=\"margin: 0 0 2px; font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em;\">${a.source} • Article ${i+1}</p>\n          <h2 style=\"margin: 0 0 8px; font-size: 16px; line-height: 1.4;\">\n            <a href=\"${a.url}\" style=\"color: #1e1b4b; text-decoration: none;\">${a.title}</a>\n          </h2>\n          <p style=\"margin: 0 0 10px; font-size: 14px; color: #4b5563; line-height: 1.6;\">${a.summary || a.description || ''}</p>\n          <a href=\"${a.url}\" style=\"font-size: 13px; color: #6366f1; text-decoration: none; font-weight: 600;\">Lire l'article →</a>\n        </td></tr>\n      </table>\n    </td>\n  </tr>\n`).join('');\n\nconst html = `<!DOCTYPE html>\n<html lang=\"fr\">\n<head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><title>Persona Newsletter</title></head>\n<body style=\"margin:0; padding:0; background-color:#f3f4f6; font-family: 'Helvetica Neue', Arial, sans-serif;\">\n  <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f3f4f6; padding: 32px 16px;\">\n    <tr><td align=\"center\">\n      <table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px; width:100%;\">\n        <!-- HEADER -->\n        <tr><td style=\"background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border-radius: 12px 12px 0 0; padding: 32px; text-align: center;\">\n          <p style=\"margin:0 0 4px; font-size:12px; color:rgba(255,255,255,0.7); text-transform:uppercase; letter-spacing:0.1em;\">📰 Ta newsletter personnalisée</p>\n          <h1 style=\"margin:0 0 8px; font-size:28px; color:white; font-weight:800;\">Persona</h1>\n          <p style=\"margin:0; font-size:14px; color:rgba(255,255,255,0.85);\">${date}</p>\n        </td></tr>\n        <!-- INTRO -->\n        <tr><td style=\"background:white; padding: 32px 32px 0;\">\n          <p style=\"margin:0; font-size:16px; color:#374151;\">Bonjour <strong>${userName}</strong> 👋</p>\n          <p style=\"margin:12px 0 0; font-size:14px; color:#6b7280; line-height:1.6;\">Voici ta sélection du jour, choisie et résumée par l'IA selon tes centres d'intérêt.</p>\n        </td></tr>\n        <!-- DIVIDER -->\n        <tr><td style=\"background:white; padding: 20px 32px;\"><hr style=\"border:none; border-top:1px solid #e5e7eb;\"></td></tr>\n        <!-- ARTICLES -->\n        <tr><td style=\"background:white; padding: 0 32px;\">\n          <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\">\n            ${articleCards}\n          </table>\n        </td></tr>\n        <!-- FOOTER -->\n        <tr><td style=\"background:#f9fafb; border-top:1px solid #e5e7eb; border-radius:0 0 12px 12px; padding:24px 32px; text-align:center;\">\n          <p style=\"margin:0 0 8px; font-size:12px; color:#9ca3af;\">Tu reçois cet email car tu es abonné(e) à Persona.</p>\n          <p style=\"margin:0; font-size:12px; color:#9ca3af;\">\n            <a href=\"http://localhost:5678/webhook/unsubscribe?uid=${userId}&token=${unsubToken}\" style=\"color:#6366f1;\">Se désinscrire</a>\n            &nbsp;•&nbsp;\n            <a href=\"http://localhost:5678/webhook/persona-chatbot-webhook-001/chat\" style=\"color:#6366f1;\">Modifier mes préférences</a>\n          </p>\n          <p style=\"margin:10px 0 0; font-size:12px; color:#9ca3af;\">\n            Ton avis sur cette newsletter :\n            <a href=\"${feedbackLinkGood}\" style=\"color:#6366f1;\">J'ai aimé</a>\n            &nbsp;•&nbsp;\n            <a href=\"${feedbackLinkBad}\" style=\"color:#6366f1;\">Je n'ai pas aimé</a>\n          </p>\n        </td></tr>\n      </table>\n    </td></tr>\n  </table>\n</body>\n</html>`;\n\nreturn [{ json: { html, subject: `📰 Ta newsletter Persona — ${date}`, email: $json.email, username: userName, user_id: userId, articles, newsletter_id: newsletterId } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -443,6 +444,10 @@
             {
               "fieldId": "articles",
               "fieldValue": "={{ JSON.stringify($('Construire email HTML').first().json.articles) }}"
+            },
+            {
+              "fieldId": "newsletter_id",
+              "fieldValue": "={{ $('Construire email HTML').first().json.newsletter_id }}"
             }
           ]
         }
@@ -478,7 +483,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// R\u00e9cup\u00e9rer les prefs de l'utilisateur courant\nconst prefs = $input.item.json;\n\n// Si pas de prefs du tout, sortir proprement\nif (!prefs.user_id) {\n  return [{ json: { ...prefs, isMatch: false, debug: 'no prefs found' } }];\n}\n\n// Convertir l'heure actuelle dans le fuseau de l'utilisateur\nconst tz = prefs.schedule_tz || 'UTC';\nconst nowISO = $('Calculer heure UTC').first().json.nowISO;\nconst now = new Date(nowISO);\n\nconst fmt = new Intl.DateTimeFormat('en-GB', {\n  hour: '2-digit',\n  timeZone: tz,\n  hour12: false\n});\n\nconst currentHour = fmt.format(now).substring(0, 2); // ex: \"19\"\nconst scheduleHour = (prefs.schedule_time || '').substring(0, 2); // ex: \"19\"\n\nconst isMatch = currentHour === scheduleHour;\n\nreturn [{\n  json: {\n    ...prefs,\n    currentHour,\n    scheduleHour,\n    isMatch,\n    debug: `tz=${tz} | now=${currentHour}h vs schedule=${scheduleHour}h | match=${isMatch}`\n  }\n}];"
+        "jsCode": "// Récupérer les prefs de l'utilisateur courant\nconst prefs = $input.item.json;\n\n// Si pas de prefs du tout, sortir proprement\nif (!prefs.user_id) {\n  return [{ json: { ...prefs, isMatch: false, debug: 'no prefs found' } }];\n}\n\n// Convertir l'heure actuelle dans le fuseau de l'utilisateur\n// ⚠️ Ton instance n8n est configurée sur Ausera/New_York par défaut.\n// Ton système local est à UTC+1 (15h locale pour 14h UTC). On force donc Africa/Lagos (UTC+1).\nlet tz = prefs.schedule_tz || 'UTC';\nif (tz === 'UTC' || tz === 'Ausera/New_York') {\n  tz = 'Africa/Lagos';\n}\n\nconst nowISO = $('Calculer heure UTC').first().json.nowISO;\nconst now = new Date(nowISO);\n\nconst fmt = new Intl.DateTimeFormat('en-GB', {\n  hour: '2-digit',\n  timeZone: tz,\n  hour12: false\n});\n\nconst currentHour = fmt.format(now).substring(0, 2); // ex: \"19\"\nconst scheduleHour = (prefs.schedule_time || '').substring(0, 2); // ex: \"19\"\n\n// Mettre FORCE_SEND = true pour les tests afin de bypasser ce filtre\nconst FORCE_SEND = false;\nconst isMatch = FORCE_SEND || (currentHour === scheduleHour);\n\nreturn [{\n  json: {\n    ...prefs,\n    currentHour,\n    scheduleHour,\n    isMatch,\n    debug: `tz=${tz} | now=${currentHour}h vs schedule=${scheduleHour}h | match=${isMatch}`\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -487,7 +492,7 @@
         0
       ],
       "id": "code-check-tz-001",
-      "name": "V\u00e9rifier horaire",
+      "name": "Vérifier horaire",
       "alwaysOutputData": true
     }
   ],
@@ -531,25 +536,25 @@
         [],
         [
           {
-            "node": "Pr\u00e9f\u00e9rences user",
+            "node": "Préférences user",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Pr\u00e9f\u00e9rences user": {
+    "Préférences user": {
       "main": [
         [
           {
-            "node": "V\u00e9rifier horaire",
+            "node": "Vérifier horaire",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "A des prefs \u00e0 cet horaire?": {
+    "A des prefs à cet horaire?": {
       "main": [
         [
           {
@@ -586,7 +591,7 @@
             "index": 0
           },
           {
-            "node": "R\u00e9cup\u00e9rer feedbacks pass\u00e9s",
+            "node": "Récupérer feedbacks passés",
             "type": "main",
             "index": 0
           }
@@ -630,29 +635,29 @@
       "main": [
         [
           {
-            "node": "Normaliser + D\u00e9dup + Fact-check",
+            "node": "Normaliser + Dédup + Fact-check",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Normaliser + D\u00e9dup + Fact-check": {
+    "Normaliser + Dédup + Fact-check": {
       "main": [
         [
           {
-            "node": "Agr\u00e9ger pour l'IA",
+            "node": "Agréger pour l'IA",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Agr\u00e9ger pour l'IA": {
+    "Agréger pour l'IA": {
       "main": [
         [
           {
-            "node": "IA \u2014 Filtrage et r\u00e9sum\u00e9",
+            "node": "IA — Filtrage et résumé",
             "type": "main",
             "index": 0
           }
@@ -663,25 +668,25 @@
       "ai_languageModel": [
         [
           {
-            "node": "IA \u2014 Filtrage et r\u00e9sum\u00e9",
+            "node": "IA — Filtrage et résumé",
             "type": "ai_languageModel",
             "index": 0
           }
         ]
       ]
     },
-    "IA \u2014 Filtrage et r\u00e9sum\u00e9": {
+    "IA — Filtrage et résumé": {
       "main": [
         [
           {
-            "node": "Parser r\u00e9ponse IA",
+            "node": "Parser réponse IA",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Parser r\u00e9ponse IA": {
+    "Parser réponse IA": {
       "main": [
         [
           {
@@ -743,22 +748,14 @@
         ]
       ]
     },
-    "R\u00e9cup\u00e9rer feedbacks pass\u00e9s": {
-      "main": [
-        [
-          {
-            "node": "Agr\u00e9ger pour l'IA",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Récupérer feedbacks passés": {
+      "main": []
     },
-    "V\u00e9rifier horaire": {
+    "Vérifier horaire": {
       "main": [
         [
           {
-            "node": "A des prefs \u00e0 cet horaire?",
+            "node": "A des prefs à cet horaire?",
             "type": "main",
             "index": 0
           }

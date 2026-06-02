@@ -84,17 +84,22 @@ CREATE TABLE preferences (
 
 -- Logs d'envoi
 CREATE TABLE newsletter_logs (
-  id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id   UUID REFERENCES users(id),
-  sent_at   TIMESTAMP DEFAULT now(),
-  articles  JSONB,
-  feedback  TEXT
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID REFERENCES users(id) ON DELETE CASCADE,
+  newsletter_id   VARCHAR(255),
+  sent_at         TIMESTAMP DEFAULT now(),
+  articles        JSONB,
+  feedback        TEXT,
+  feedback_source VARCHAR(50) CHECK (feedback_source IN ('chat', 'email_link')),
+  rating          VARCHAR(50) CHECK (rating IN ('good', 'bad')),
+  created_at      TIMESTAMP DEFAULT now(),
+  updated_at      TIMESTAMP DEFAULT now()
 );
 
 -- Sessions chatbot
 CREATE TABLE sessions (
   session_id TEXT PRIMARY KEY,
-  user_id    UUID REFERENCES users(id),
+  user_id    UUID REFERENCES users(id) ON DELETE CASCADE,
   created_at TIMESTAMP DEFAULT now(),
   expires_at TIMESTAMP
 );
@@ -150,6 +155,10 @@ http://localhost:5678/webhook/unsubscribe
 
 // Lien de modification des préférences (URL du Chat Trigger A)
 http://localhost:5678/webhook/persona-chatbot-webhook-001/chat
+
+// Liens de feedback email vers le Webhook feedback
+http://localhost:5678/webhook/feedback?uid={{ userId }}&token={{ token }}&newsletter_id={{ newsletterId }}&rating=good
+http://localhost:5678/webhook/feedback?uid={{ userId }}&token={{ token }}&newsletter_id={{ newsletterId }}&rating=bad
 ```
 
 ### 5. Activer les workflows

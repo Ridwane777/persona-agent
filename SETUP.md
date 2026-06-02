@@ -31,17 +31,22 @@ CREATE TABLE preferences (
 
 -- Table logs newsletter
 CREATE TABLE newsletter_logs (
-  id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id   UUID REFERENCES users(id),
-  sent_at   TIMESTAMP DEFAULT now(),
-  articles  JSONB,
-  feedback  TEXT
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id       UUID REFERENCES users(id) ON DELETE CASCADE,
+  newsletter_id VARCHAR(255),
+  sent_at       TIMESTAMP DEFAULT now(),
+  articles      JSONB,
+  feedback      TEXT,
+  feedback_source VARCHAR(50) CHECK (feedback_source IN ('chat', 'email_link')),
+  rating        VARCHAR(50) CHECK (rating IN ('good', 'bad')),
+  created_at    TIMESTAMP DEFAULT now(),
+  updated_at    TIMESTAMP DEFAULT now()
 );
 
 -- Table sessions
 CREATE TABLE sessions (
   session_id TEXT PRIMARY KEY,
-  user_id    UUID REFERENCES users(id),
+  user_id    UUID REFERENCES users(id) ON DELETE CASCADE,
   created_at TIMESTAMP DEFAULT now(),
   expires_at TIMESTAMP
 );
