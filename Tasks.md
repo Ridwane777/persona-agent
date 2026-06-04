@@ -59,7 +59,7 @@
 | Respect du nombre d'articles voulu (`num_articles`) | ✅ Fait | Code dans `Parser réponse IA` applique la limite | — |
 | Réponse dans la langue de l'utilisateur | ✅ Fait | `language` injecté dans le prompt LLM | — |
 | Fallback si parsing IA échoue | ✅ Fait | `Parser réponse IA` utilise les articles originaux en fallback | — |
-| Respect du `custom_prompt` utilisateur | ✅ Fait | `custom_prompt` transmis via `Fusionner user + prefs` | Vérifier que le custom_prompt est **réellement injecté** dans le prompt LLM final |
+| Respect du `custom_prompt` utilisateur | ✅ Fait | `custom_prompt` injecté dans le prompt LLM de `IA — Filtrage et résumé` | ✅ Vérifié et confirmé fonctionnel le 4 Juin 2026 |
 
 ---
 
@@ -124,8 +124,9 @@
 | Sous-exigence | Statut | Preuve dans le projet | Ce qui manque |
 |---|:---:|---|---|
 | L'utilisateur peut donner du feedback via le chatbot | ✅ Fait | Nœud `save_feedback` dans `Agent Principal` (Workflow A) | — |
+| Feedback donné via lien email (Workflow C) | ✅ Fait | Webhook `/feedback` avec UPDATE sur `newsletter_logs` filtré par `newsletter_id` | — |
 | Feedback stocké en base (`newsletter_logs.feedback`) | ✅ Fait | Table `newsletter_logs` avec colonne `feedback` | — |
-| Feedback réinjecté dans le prompt du prochain envoi | ✅ Fait | Workflow B récupère les feedbacks via `R\u00e9cup\u00e9rer feedbacks pass\u00e9s` | — |
+| Feedback réinjecté dans le prompt du prochain envoi | ✅ Fait | `Récupérer feedbacks passés` s'exécute avant `Fusionner user + prefs` (séquentiel) | — |
 
 ---
 
@@ -146,7 +147,7 @@
 |---|:---:|---|---|
 | L'utilisateur peut définir un `custom_prompt` via le chatbot | ✅ Fait | Nœud `update_custom_prompt` dans `Agent Principal` (Workflow A) | — |
 | `custom_prompt` stocké en base | ✅ Fait | Colonne `preferences.custom_prompt` | — |
-| `custom_prompt` transmis au LLM de la newsletter | ✅ Partiel | `Fusionner user + prefs` inclut le `custom_prompt` | **Vérifier** que le nœud `IA — Filtrage et résumé` injecte réellement le `custom_prompt` dans son prompt |
+| `custom_prompt` transmis au LLM de la newsletter | ✅ Fait | `IA — Filtrage et résumé` injecte réellement le `custom_prompt` dans le prompt | ✅ Confirmé fonctionnel le 4 Juin 2026 |
 
 ---
 
@@ -173,8 +174,8 @@
 | 4 | **Audit de sécurité complet** (SECURITY.md) | 🟢 Fait | ✅ Oui |
 | 5 | **Note de conformité RGPD** (GDPR.md) | 🟢 Fait | ✅ Oui |
 | 6 | **Vérification du token de désinscription** (token hash avec sel secret) | 🟢 Fait | ⚠️ Utile |
-| 7 | **Preuve que le `custom_prompt` est injecté dans le LLM B** (Workflow B JSON) | 🟢 Fait | ❌ Non |
-| 8 | **Implémentation COULD 2** : feedback réinjecté dans le prompt | 🟢 Fait | ❌ Non |
+| 7 | **Preuve que le `custom_prompt` est injecté dans le LLM B** (Workflow B JSON) | ✅ Vérifié | — |
+| 8 | **Implémentation COULD 2** : feedback réinjecté dans le prompt | ✅ Vérifié | — |
 | 9 | **Mention de `factCheckScore` dans le prompt LLM** | 🟢 Fait | ❌ Non |
 
 ---

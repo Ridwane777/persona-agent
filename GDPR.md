@@ -10,7 +10,8 @@ Le système collecte et stocke les données suivantes :
 - **Mot de passe** : Stocké exclusivement sous forme de hash (SHA-256).
 - **Centres d'intérêt (Topics)** : Pour la personnalisation.
 - **Horaires et zone géographique** : Pour la planification des envois.
-- **Feedback** : Commentaires facultatifs sur les newsletters.
+- **Feedback** : Commentaires facultatifs sur les newsletters reçues (via le chatbot ou les boutons "J'ai aimé" / "Je n'ai pas aimé" dans l'email). Ces feedbacks sont utilisés uniquement pour améliorer les prochains envois de l'utilisateur concerné.
+- **Prompt personnalisé (custom_prompt)** : Instructions de style optionnelles définies par l'utilisateur pour adapter le ton de sa newsletter.
 
 ## 3. Base légale du traitement
 Le traitement repose sur le **consentement explicite** de l'utilisateur (Article 6.1.a du RGPD). Ce consentement est recueilli lors de l'onboarding via le chatbot et enregistré en base de données (`gdpr_consent` = true) avec horodatage (`gdpr_consent_date`).
@@ -35,4 +36,4 @@ Les utilisateurs peuvent exercer leurs droits directement via le chatbot ou les 
 Les données sont stockées sur **Supabase** (infrastructure AWS/GCP selon configuration). Les résumés de news sont générés via **OpenRouter** (OpenAI/Anthropic). Aucune donnée personnelle (PII) autre que le prénom/username n'est transmise aux LLM lors du résumé des news (seuls les articles et les topics sont envoyés).
 
 ---
-*Date de dernière mise à jour : 1er Juin 2024*
+*Date de dernière mise à jour : 4 Juin 2026*

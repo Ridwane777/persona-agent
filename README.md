@@ -227,10 +227,11 @@ Pour tester sans attendre l'heure programmée :
 - Chaque session est identifiée par un `session_id` unique généré par N8N.
 - Le chatbot refuse toute action si la session est invalide ou expirée.
 
-### Liens de désinscription
-- Chaque lien contient un `uid` et un `token` de sécurité calculé par hash HMAC.
-- Le **Workflow C** revalide le token avant toute suppression de données.
+### Liens de désinscription & feedback
+- Chaque lien contient un `uid` et un `token` de sécurité calculé par un **hash bit-shift JS** avec un sel secret (`CHANGE_ME_SECRET_SALT`). Note : le module `crypto` (HMAC) n'étant pas disponible par défaut dans les nœuds Code de N8N, cette implémentation est suffisante pour un usage académique.
+- Le **Workflow C** revalide le token avant toute suppression de données ou enregistrement de feedback.
 - Un lien invalide affiche une page d'erreur sans effectuer aucune action.
+- Les clics sur **"J'ai aimé" / "Je n'ai pas aimé"** dans l'email font un **UPDATE** sur la ligne existante dans `newsletter_logs` (filtrée par `newsletter_id`), évitant ainsi les doublons.
 
 ### Conformité RGPD
 - L'utilisateur peut se désinscrire à tout moment via le lien dans chaque email.
@@ -245,6 +246,11 @@ Le **Workflow B** utilise un LLM (via OpenRouter) pour :
 1. **Filtrer** les articles parmi les sources selon les topics de l'utilisateur
 2. **Résumer** chaque article sélectionné en 2-3 phrases dans la langue de l'utilisateur
 3. **Retourner** un JSON structuré avec exactement `num_articles` articles
+
+Le prompt envoyé à l'IA est enrichi dynamiquement avec :
+- **`custom_prompt`** : instructions de style définies par l'utilisateur via le chatbot (ex : _"Adopte un ton humoristique"_, _"Utilise des bullet points"_). Stocké dans `preferences.custom_prompt`.
+- **Feedbacks passés** : les avis laissés sur les newsletters précédentes (via le chatbot ou les boutons dans l'email) sont récupérés depuis `newsletter_logs` et injectés dans le prompt pour affiner la sélection du lendemain. Ce mécanisme s'exécute de manière **séquentielle** avant les appels API pour garantir la disponibilité des données.
+- **`factCheckScore`** : chaque article reçoit un score de confirmation croisée entre sources. L'IA est instruite de prioriser les articles avec un score élevé.
 
 Le modèle par défaut est configurable dans le nœud **"LLM Newsletter"**. Le projet utilise un modèle gratuit via OpenRouter, mais peut être facilement switché vers GPT-4, Claude, Mistral, etc.
 
