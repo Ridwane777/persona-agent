@@ -82,17 +82,19 @@
     },
     {
       "parameters": {
+        "operation": "update",
         "tableId": "newsletter_logs",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "newsletter_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Webhook Feedback').first().json.query.newsletter_id }}"
+            }
+          ]
+        },
         "fieldsUi": {
           "fieldValues": [
-            {
-              "fieldId": "user_id",
-              "fieldValue": "={{ $('Webhook Feedback').first().json.query.uid }}"
-            },
-            {
-              "fieldId": "newsletter_id",
-              "fieldValue": "={{ $('Webhook Feedback').first().json.query.newsletter_id || null }}"
-            },
             {
               "fieldId": "feedback",
               "fieldValue": "={{ $('Webhook Feedback').first().json.query.feedback || $('Webhook Feedback').first().json.query.rating || '' }}"

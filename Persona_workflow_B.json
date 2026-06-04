@@ -266,11 +266,6 @@
               "keyName": "user_id",
               "condition": "eq",
               "keyValue": "={{ $json.user_id }}"
-            },
-            {
-              "keyName": "feedback",
-              "condition": "neq",
-              "keyValue": "={{ '' }}"
             }
           ]
         }
