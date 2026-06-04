@@ -129,7 +129,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Les données viennent du nœud précédent\nconst prefs = $input.item.json;\nconst user = $('Loop Users').first().json;\n\nlet topicsArray = [];\nif (Array.isArray(prefs.topics)) {\n  topicsArray = prefs.topics;\n} else if (typeof prefs.topics === 'string') {\n  topicsArray = prefs.topics.replace(/^{|}$/g, '').split(',').map(t => t.trim()).filter(Boolean);\n} else {\n  topicsArray = [\"actualité\"];\n}\n\nif (topicsArray.length === 0) {\n  topicsArray = [\"actualité\"];\n}\n\nreturn [{\n  json: {\n    user_id: user.id,\n    username: user.username,\n    email: user.email,\n    topics: topicsArray,\n    language: prefs.language || 'fr',\n    num_articles: prefs.num_articles || 5,\n    custom_prompt: prefs.custom_prompt || null,\n    schedule_time: prefs.schedule_time || null\n  }\n}];"
+        "jsCode": "// Les données viennent du nœud Préférences user\nconst prefs = $('Préférences user').first().json;\nconst user = $('Loop Users').first().json;\n\nlet topicsArray = [];\nif (Array.isArray(prefs.topics)) {\n  topicsArray = prefs.topics;\n} else if (typeof prefs.topics === 'string') {\n  topicsArray = prefs.topics.replace(/^{|}$/g, '').split(',').map(t => t.trim()).filter(Boolean);\n} else {\n  topicsArray = [\"actualité\"];\n}\n\nif (topicsArray.length === 0) {\n  topicsArray = [\"actualité\"];\n}\n\nreturn [{\n  json: {\n    user_id: user.id,\n    username: user.username,\n    email: user.email,\n    topics: topicsArray,\n    language: prefs.language || 'fr',\n    num_articles: prefs.num_articles || 5,\n    custom_prompt: prefs.custom_prompt || null,\n    schedule_time: prefs.schedule_time || null\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -543,7 +543,7 @@
       "main": [
         [
           {
-            "node": "Fusionner user + prefs",
+            "node": "Récupérer feedbacks passés",
             "type": "main",
             "index": 0
           }
@@ -551,6 +551,17 @@
         [
           {
             "node": "Loop Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Récupérer feedbacks passés": {
+      "main": [
+        [
+          {
+            "node": "Fusionner user + prefs",
             "type": "main",
             "index": 0
           }
@@ -572,11 +583,6 @@
           },
           {
             "node": "RSS BBC News",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Récupérer feedbacks passés",
             "type": "main",
             "index": 0
           }
