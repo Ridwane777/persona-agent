@@ -3,7 +3,6 @@
   "nodes": [
     {
       "parameters": {
-        "httpMethod": "GET",
         "path": "unsubscribe",
         "responseMode": "responseNode",
         "options": {}
@@ -11,16 +10,15 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        -800,
-        0
+        -336,
+        176
       ],
-      "id": "webhook-unsub-001",
+      "id": "e2f389b7-7375-47fb-b022-98ca33598b41",
       "name": "Webhook Désinscription",
       "webhookId": "persona-unsubscribe-webhook"
     },
     {
       "parameters": {
-        "httpMethod": "GET",
         "path": "feedback",
         "responseMode": "responseNode",
         "options": {}
@@ -28,11 +26,12 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        -800,
-        220
+        -336,
+        400
       ],
-      "id": "webhook-feedback-001",
-      "name": "Webhook Feedback"
+      "id": "74ba2df3-1fbe-427f-8d8c-56f768184fcb",
+      "name": "Webhook Feedback",
+      "webhookId": "511812d3-e2e4-4572-80ab-a7e2f7128ef3"
     },
     {
       "parameters": {
@@ -41,10 +40,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -580,
-        220
+        -112,
+        400
       ],
-      "id": "verify-feedback-token-001",
+      "id": "cc6864ac-1a22-45cd-9d72-9e0b411440ed",
       "name": "Vérifier token feedback"
     },
     {
@@ -75,15 +74,14 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -360,
-        220
+        112,
+        400
       ],
-      "id": "if-feedback-token-valid-001",
+      "id": "d12ef5e9-469f-4fb1-a919-417e2f2b1a24",
       "name": "Token feedback valide?"
     },
     {
       "parameters": {
-        "operation": "create",
         "tableId": "newsletter_logs",
         "fieldsUi": {
           "fieldValues": [
@@ -113,10 +111,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -140,
-        220
+        320,
+        400
       ],
-      "id": "insert-feedback-001",
+      "id": "2033f339-3f63-4fa7-aa40-28f993621da5",
       "name": "Insérer feedback",
       "credentials": {
         "supabaseApi": {
@@ -143,10 +141,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        520,
-        220
+        992,
+        400
       ],
-      "id": "respond-feedback-success-001",
+      "id": "0a458f5c-a655-48e2-b4cb-92e5e5267945",
       "name": "Répondre feedback succès"
     },
     {
@@ -168,10 +166,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        -140,
-        380
+        320,
+        560
       ],
-      "id": "respond-feedback-error-001",
+      "id": "921498ab-b605-418f-ba80-dc45da1a4c82",
       "name": "Répondre feedback erreur"
     },
     {
@@ -181,10 +179,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -580,
-        0
+        -112,
+        176
       ],
-      "id": "verify-token-001",
+      "id": "b44e42b8-aea0-4303-bc1e-83d0d3709b7b",
       "name": "Vérifier token"
     },
     {
@@ -215,10 +213,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -360,
-        0
+        112,
+        176
       ],
-      "id": "if-token-valid-001",
+      "id": "f65372d6-8ba4-4fd0-bfb2-2747b211809f",
       "name": "Token valide?"
     },
     {
@@ -250,10 +248,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -140,
-        -120
+        320,
+        48
       ],
-      "id": "deactivate-user-001",
+      "id": "cc3689a9-645f-4f33-8cd8-21722050dd72",
       "name": "Désactiver compte",
       "credentials": {
         "supabaseApi": {
@@ -279,10 +277,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        80,
-        -120
+        544,
+        48
       ],
-      "id": "delete-prefs-001",
+      "id": "2f4dc6b9-3375-42f1-9cd8-a0b694492781",
       "name": "Supprimer préférences",
       "credentials": {
         "supabaseApi": {
@@ -308,10 +306,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        300,
-        -120
+        768,
+        48
       ],
-      "id": "delete-sessions-001",
+      "id": "344f9f76-e71c-43da-ab61-2e1d017e412e",
       "name": "Supprimer sessions",
       "credentials": {
         "supabaseApi": {
@@ -338,10 +336,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        520,
-        -120
+        992,
+        48
       ],
-      "id": "respond-success-001",
+      "id": "ae441f8e-6cf3-413d-b0df-f6de944c3a88",
       "name": "Répondre succès"
     },
     {
@@ -363,10 +361,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        -140,
-        120
+        320,
+        288
       ],
-      "id": "respond-error-001",
+      "id": "6b6beef5-1b9f-4b4b-b692-fa5821755ae5",
       "name": "Répondre erreur"
     }
   ],
@@ -377,6 +375,57 @@
         [
           {
             "node": "Vérifier token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Feedback": {
+      "main": [
+        [
+          {
+            "node": "Vérifier token feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vérifier token feedback": {
+      "main": [
+        [
+          {
+            "node": "Token feedback valide?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Token feedback valide?": {
+      "main": [
+        [
+          {
+            "node": "Insérer feedback",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Répondre feedback erreur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insérer feedback": {
+      "main": [
+        [
+          {
+            "node": "Répondre feedback succès",
             "type": "main",
             "index": 0
           }
@@ -444,69 +493,17 @@
           }
         ]
       ]
-    },
-    "Webhook Feedback": {
-      "main": [
-        [
-          {
-            "node": "Vérifier token feedback",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Vérifier token feedback": {
-      "main": [
-        [
-          {
-            "node": "Token feedback valide?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Token feedback valide?": {
-      "main": [
-        [
-          {
-            "node": "Insérer feedback",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Répondre feedback erreur",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Insérer feedback": {
-      "main": [
-        [
-          {
-            "node": "Répondre feedback succès",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
     }
   },
   "active": false,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "binaryMode": "separate"
   },
+  "versionId": "3627709e-e715-4c97-8e4c-211c3c3dd3dd",
   "meta": {
-    "templateCredsSetupCompleted": false
+    "instanceId": ""
   },
-  "tags": [
-    {
-      "name": "Persona"
-    }
-  ]
+  "id": "egqSGR8jO6XI8onw",
+  "tags": []
 }
