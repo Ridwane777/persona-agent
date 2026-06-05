@@ -80,12 +80,13 @@
 
 | Sous-exigence | Statut | Preuve dans le projet | Ce qui manque |
 |---|:---:|---|---|
-| Schedule Trigger toutes les heures | ✅ Fait | Nœud `Schedule Trigger (toutes les heures)` dans Workflow B | — |
+| Webhook Trigger (cron externe) | ✅ Fait | Trigger remplacé par Webhook, déclenché par `cron-job.org` toutes les minutes | — |
 | Calcul de l'heure UTC courante | ✅ Fait | Nœud `Calculer heure UTC` (Code JS) | — |
-| Comparaison heure courante vs heure utilisateur | ✅ Fait | Nœud `Vérifier horaire` (Code JS avec `Intl.DateTimeFormat`) | — |
+| Comparaison heure courante vs heure utilisateur (minute) | ✅ Fait | Nœud `Vérifier horaire` (Code JS avec `Intl.DateTimeFormat`, résolution HH:mm) | — |
 | Support des timezones africaines et mondiales | ✅ Fait | `Intl.DateTimeFormat` + README liste les timezones supportées | — |
 | Boucle par utilisateur (`SplitInBatches`) | ✅ Fait | Nœud `Loop Users` dans Workflow B | — |
 | Ne traite que les users actifs | ✅ Fait | Nœud `Utilisateurs actifs` filtre `is_active = true` | — |
+| **Déploiement cloud production** | ✅ Fait | Web Service Render (`your-n8n-instance.example.com`) + keep-alive cron-job.org | — |
 | **Preuve d'envoi à la bonne heure** | ❌ Manquant | Rien dans le repo | **Log Supabase ou capture** montrant `sent_at` correspondant à l'horaire configuré |
 
 ---
@@ -158,7 +159,7 @@
 | Paiement / abonnement premium | ❌ Non implémenté | Non prioritaire |
 | Référencer un autre utilisateur (profil public) | ❌ Non implémenté | Non prioritaire |
 | Publicités ciblées dans les newsletters | ❌ Non implémenté | Non prioritaire (soulève des enjeux RGPD complexes) |
-| Endpoints exposés (site web, Discord, email entrant) | ❌ Non implémenté | À mentionner comme évolution future |
+| Endpoints exposés (site web, Discord, email entrant) | ✅ Implémenté | `Persona_workflow_A_API.json` + `demo_chat.html` — API REST POST `/webhook/api-chat` |
 | Newsletter multi-format (blog, réseaux sociaux, version imprimable) | ❌ Non implémenté | À mentionner comme évolution future |
 | Multimédia généré par IA | ❌ Non implémenté | À mentionner comme évolution future |
 
@@ -177,6 +178,7 @@
 | 7 | **Preuve que le `custom_prompt` est injecté dans le LLM B** (Workflow B JSON) | ✅ Vérifié | — |
 | 8 | **Implémentation COULD 2** : feedback réinjecté dans le prompt | ✅ Vérifié | — |
 | 9 | **Mention de `factCheckScore` dans le prompt LLM** | 🟢 Fait | ❌ Non |
+| 10 | **Démo de l'API REST** via `demo_chat.html` (endpoint `/webhook/api-chat`) | 🟢 Fait | ✅ Oui |
 
 ---
 

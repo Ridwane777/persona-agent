@@ -6,7 +6,7 @@
 
 ## 🏗️ Architecture
 
-Le projet est composé de **3 workflows N8N** et d'une base de données **Supabase** :
+Le projet est composé de **4 workflows N8N**, d'une base de données **Supabase** et d'une **API REST exposée** via Render :
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -16,14 +16,22 @@ Le projet est composé de **3 workflows N8N** et d'une base de données **Supaba
 │  → Configuration des préférences (topics, horaire, langue...)  │
 │  → Authentification par session avec expiration                │
 └─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│  Workflow A (API) — Chatbot en mode API REST                    │
+│  Trigger: Webhook POST /webhook/api-chat                       │
+│  → Même logique que Workflow A                                 │
+│  → Répond en JSON { "reply": "..." } via Respond to Webhook    │
+│  → Compatible avec n'importe quel client HTTP (site, app...)   │
+└─────────────────────────────────────────────────────────────────┘
                           │
                    [Supabase DB]
                           │
 ┌─────────────────────────────────────────────────────────────────┐
 │  Workflow B — Newsletter (Génération & Envoi)                   │
-│  Trigger: Schedule (toutes les heures)                         │
+│  Trigger: Webhook POST /webhook/trigger-newsletter             │
+│         déclenché par cron-job.org toutes les minutes          │
 │  → Récupération des utilisateurs actifs                        │
-│  → Vérification de l'horaire selon timezone de chaque user     │
+│  → Vérification de l'horaire (minute-précis) par timezone      │
 │  → Agrégation news: NewsAPI + The Guardian + RSS BBC           │
 │  → Filtrage & résumé par LLM (OpenRouter)                      │
 │  → Email HTML personnalisé envoyé via Gmail                    │
@@ -39,6 +47,18 @@ Le projet est composé de **3 workflows N8N** et d'une base de données **Supaba
 │  → Page de confirmation HTML                                   │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+### 🌐 Déploiement Cloud (Production)
+
+> Le projet est déployé sur **Render** (Web Service, Frankfurt). n8n tourne en continu et les workflows sont actifs en permanence.
+
+| Variable d'environnement | Valeur |
+|---|---|
+| `N8N_PORT` | `10000` |
+| `WEBHOOK_URL` | `https://your-n8n-instance.example.com` |
+| `GENERIC_TIMEZONE` | `Africa/Lagos` |
+| `NODE_OPTIONS` | `--max-old-space-size=350` |
+| `EXECUTIONS_DATA_SAVE_ON_SUCCESS` | `none` |
 
 ---
 
@@ -209,12 +229,18 @@ Pour tester sans attendre l'heure programmée :
 
 ```
 .
-├── Persona_workflow_A.json   # Workflow Chatbot (Onboarding & Auth)
-├── Persona_workflow_B.json   # Workflow Newsletter (Génération & Envoi)
-├── Persona_workflow_C.json   # Workflow Désinscription (RGPD)
-├── SETUP.md                  # Guide de mise en service rapide
-├── README.md                 # Ce fichier
-└── .env                      # Variables d'environnement (ne pas committer !)
+├── Persona_workflow_A.json       # Workflow Chatbot (Onboarding & Auth — interface N8N)
+├── Persona_workflow_A_API.json   # Workflow Chatbot en mode API REST (Webhook POST)
+├── Persona_workflow_B.json       # Workflow Newsletter (Génération & Envoi)
+├── Persona_workflow_C.json       # Workflow Désinscription (RGPD)
+├── demo_chat.html                # Page de démonstration HTML — appelle l'API chatbot
+├── SETUP.md                      # Guide de mise en service rapide
+├── README.md                     # Ce fichier
+├── SECURITY.md                   # Rapport d'audit de sécurité
+├── GDPR.md                       # Note de conformité RGPD
+├── Tasks.md                      # Suivi des exigences MUSTs/COULDs
+├── session_handover.md           # Handover technique inter-sessions
+└── .env                          # Variables d'environnement (ne pas committer !)
 ```
 
 ---
@@ -275,7 +301,7 @@ Africa/Abidjan, Africa/Dakar, Africa/Casablanca,
 Africa/Lagos, Africa/Nairobi, Africa/Johannesburg...
 ```
 
-La comparaison d'horaire se fait au niveau de l'heure (format `HH`) pour éviter les problèmes de décalage à la minute près.
+La comparaison d'horaire se fait au niveau de la **minute** (format `HH:mm`) pour une précision maximale, rendue possible par le déclenchement toutes les minutes via `cron-job.org` en production.
 
 ---
 
@@ -289,6 +315,32 @@ La comparaison d'horaire se fait au niveau de l'heure (format `HH`) pour éviter
 | **NewsAPI** | Agrégation d'actualités |
 | **The Guardian API** | Source d'actualités premium |
 | **Gmail OAuth2** | Envoi des newsletters |
+| **Render** | Hébergement cloud du serveur N8N (production) |
+| **cron-job.org** | Déclenchement externe à la minute (keep-alive + trigger) |
+
+---
+
+## 📡 Endpoints exposés (Production)
+
+| Endpoint | Méthode | Description |
+|---|---|---|
+| `/webhook/trigger-newsletter` | POST | Déclenche la newsletter (appelé par cron-job.org) |
+| `/webhook/api-chat` | POST | API chatbot REST — utilisé par `demo_chat.html` |
+| `/webhook/unsubscribe` | GET | Désinscription RGPD via lien email |
+| `/webhook/feedback` | GET | Enregistrement du feedback (J'ai aimé / Pas aimé) |
+
+### Utilisation de l'API chatbot
+
+```bash
+curl -X POST https://your-n8n-instance.example.com/webhook/api-chat \
+  -H "Content-Type: application/json" \
+  -d '{"sessionId": "mon-session-id", "message": "Bonjour !"}'
+
+# Réponse :
+# { "reply": "Bonjour ! Je suis l'assistant Persona..." }
+```
+
+Une démonstration visuelle est disponible dans le fichier **`demo_chat.html`** (ouvrir dans un navigateur).
 
 ---
 
