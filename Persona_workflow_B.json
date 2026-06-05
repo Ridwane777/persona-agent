@@ -3,22 +3,18 @@
   "nodes": [
     {
       "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "hours"
-            }
-          ]
-        }
+        "path": "trigger-newsletter",
+        "options": {}
       },
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.2,
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
       "position": [
         -3344,
         8928
       ],
       "id": "ed5d52b2-ec62-476a-85d3-a6a579db8ee9",
-      "name": "Schedule Trigger (toutes les heures)"
+      "name": "Webhook Trigger",
+      "webhookId": "persona-newsletter-cron"
     },
     {
       "parameters": {
@@ -468,7 +464,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Récupérer les prefs de l'utilisateur courant\nconst prefs = $input.item.json;\n\n// Si pas de prefs du tout, sortir proprement\nif (!prefs.user_id) {\n  return [{ json: { ...prefs, isMatch: false, debug: 'no prefs found' } }];\n}\n\n// Convertir l'heure actuelle dans le fuseau de l'utilisateur\n// ⚠️ Ton instance n8n est configurée sur Ausera/New_York par défaut.\n// Ton système local est à UTC+1 (15h locale pour 14h UTC). On force donc Africa/Lagos (UTC+1).\nlet tz = prefs.schedule_tz || 'UTC';\nif (tz === 'UTC' || tz === 'Ausera/New_York') {\n  tz = 'Africa/Lagos';\n}\n\nconst nowISO = $('Calculer heure UTC').first().json.nowISO;\nconst now = new Date(nowISO);\n\nconst fmt = new Intl.DateTimeFormat('en-GB', {\n  hour: '2-digit',\n  timeZone: tz,\n  hour12: false\n});\n\nconst currentHour = fmt.format(now).substring(0, 2); // ex: \"19\"\nconst scheduleHour = (prefs.schedule_time || '').substring(0, 2); // ex: \"19\"\n\n// Mettre FORCE_SEND = true pour les tests afin de bypasser ce filtre\nconst FORCE_SEND = false;\nconst isMatch = FORCE_SEND || (currentHour === scheduleHour);\n\nreturn [{\n  json: {\n    ...prefs,\n    currentHour,\n    scheduleHour,\n    isMatch,\n    debug: `tz=${tz} | now=${currentHour}h vs schedule=${scheduleHour}h | match=${isMatch}`\n  }\n}];"
+        "jsCode": "// Récupérer les prefs de l'utilisateur courant\nconst prefs = $input.item.json;\n\n// Si pas de prefs du tout, sortir proprement\nif (!prefs.user_id) {\n  return [{ json: { ...prefs, isMatch: false, debug: 'no prefs found' } }];\n}\n\n// Fuseau horaire : utilise schedule_tz de l'utilisateur.\n// Fallback sur Africa/Lagos (UTC+1) si le serveur n8n est sur un autre fuseau.\nlet tz = prefs.schedule_tz || 'UTC';\nif (tz === 'UTC' || tz === 'Ausera/New_York') {\n  tz = 'Africa/Lagos';\n}\n\nconst nowISO = $('Calculer heure UTC').first().json.nowISO;\nconst now = new Date(nowISO);\n\n// Comparaison à la MINUTE près (HH:mm) grâce au Render Cron déclenché chaque minute\nconst fmtHour = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', timeZone: tz, hour12: false });\nconst fmtMin  = new Intl.DateTimeFormat('en-GB', { minute: '2-digit', timeZone: tz, hour12: false });\n\nconst currentHH   = fmtHour.format(now).substring(0, 2).padStart(2, '0');\nconst currentMM   = fmtMin.format(now).padStart(2, '0');\nconst currentHHMM = `${currentHH}:${currentMM}`; // ex: \"16:30\"\n\nconst scheduleHHMM = (prefs.schedule_time || '').substring(0, 5); // ex: \"16:30\"\n\n// Mettre FORCE_SEND = true pour les tests afin de bypasser ce filtre\nconst FORCE_SEND = false;\nconst isMatch = FORCE_SEND || (currentHHMM === scheduleHHMM);\n\nreturn [{\n  json: {\n    ...prefs,\n    currentHHMM,\n    scheduleHHMM,\n    isMatch,\n    debug: `tz=${tz} | now=${currentHHMM} vs schedule=${scheduleHHMM} | match=${isMatch}`\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -483,7 +479,7 @@
   ],
   "pinData": {},
   "connections": {
-    "Schedule Trigger (toutes les heures)": {
+    "Webhook Trigger": {
       "main": [
         [
           {
