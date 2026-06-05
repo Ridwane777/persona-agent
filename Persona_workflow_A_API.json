@@ -1,0 +1,1097 @@
+{
+  "name": "Persona — Workflow A (API Chatbot)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "api-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1400,
+        0
+      ],
+      "id": "chat-trigger-001",
+      "name": "Chat trigger",
+      "webhookId": "persona-chatbot-webhook-001"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "sessions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "session_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.body.sessionId }}"
+            },
+            {
+              "keyName": "expires_at",
+              "condition": "gt",
+              "keyValue": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "options": {
+          "limit": 1
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1180,
+        0
+      ],
+      "id": "check-sessions-001",
+      "name": "check_sessions",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "boolean-check-code",
+              "leftValue": "={{ $json.is_active }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -860,
+        0
+      ],
+      "id": "if-session-001",
+      "name": "Session active?"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.message }}",
+        "options": {
+          "systemMessage": "Tu es l'assistant d'accueil de Persona, un service de newsletter IA personnalisée.\n\n=== SESSION ACTUELLE ===\nSession ID : ${$('Chat trigger').first().json.body.sessionId}\n\n=== TON RÔLE ===\nGérer UNIQUEMENT les inscriptions et les connexions. Rien d'autre.\n\n=== RÈGLES DE DIALOGUE ===\n- Réponds toujours en texte brut, clair et convivial.\n- Ne montre JAMAIS de JSON à l'utilisateur.\n\n=== INSCRIPTION ===\n1. Demande les 3 informations : Username, Email, Mot de passe.\n2. DÈS QUE tu as ces 3 informations, APPELLE IMMÉDIATEMENT L'OUTIL 'register'. Ne fais aucune phrase, appelle juste l'outil !\n3. UNE FOIS QUE l'outil 'register' a réussi, ALORS SEULEMENT réponds à l'utilisateur.\nInclus exactement : \"Tes données seront stockées pour t'envoyer ta newsletter. Tu peux te désinscrire à tout moment.\" Puis demande-lui de se connecter.\n\n=== CONNEXION ===\nDemande l'email et le mot de passe.\nDès que tu les as, TU DOIS appeler l'outil 'Find_user' avec cet email et ce password.\nSi l'outil retourne un utilisateur (succès) -> TU DOIS appeler l'outil 'Create_active_sessions' avec :\n  - session_id = ${$('Chat trigger').first().json.body.sessionId}\n  - user_id = (id retourné par Find_user)\nSi l'outil ne retourne rien -> informe l'utilisateur que l'email ou le mot de passe est incorrect."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -740,
+        120
+      ],
+      "id": "auth-agent-001",
+      "name": "Agent Auth (non connecté)"
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        -740,
+        320
+      ],
+      "id": "memory-auth-001",
+      "name": "Mémoire Auth"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -900,
+        320
+      ],
+      "id": "llm-auth-001",
+      "name": "LLM Auth",
+      "credentials": {
+        "openRouterApi": {
+          "id": "OPENROUTER_CREDENTIAL_ID",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Utilise cet outil pour créer le compte de l'utilisateur avec son username, email et password.",
+        "tableId": "users",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "username",
+              "fieldValue": "={{ $fromAI('username', 'Le username choisi par l\\'utilisateur', 'string') }}"
+            },
+            {
+              "fieldId": "email",
+              "fieldValue": "={{ $fromAI('email', 'L\\'adresse email fournie par l\\'utilisateur', 'string') }}"
+            },
+            {
+              "fieldId": "password_hash",
+              "fieldValue": "={{ $fromAI('password', 'Le mot de passe fourni par l\\'utilisateur', 'string').hash('sha256') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        -520,
+        420
+      ],
+      "id": "tool-register-001",
+      "name": "register",
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Cherche un utilisateur via email et mot de passe pour le connecter.",
+        "operation": "getAll",
+        "tableId": "users",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "email",
+              "condition": "eq",
+              "keyValue": "={{ $fromAI('email', 'L\\'adresse email de l\\'utilisateur', 'string') }}"
+            },
+            {
+              "keyName": "password_hash",
+              "condition": "eq",
+              "keyValue": "={{ $fromAI('password', 'Le mot de passe fourni par l\\'utilisateur', 'string').hash('sha256') }}"
+            }
+          ]
+        },
+        "options": {
+          "limit": 1
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        -520,
+        260
+      ],
+      "id": "tool-finduser-001",
+      "name": "Find_user",
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Crée une session active pour un utilisateur connecté.",
+        "tableId": "sessions",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "session_id",
+              "fieldValue": "={{ $fromAI('session_id', 'Le session ID de la conversation en cours', 'string') }}"
+            },
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{ $fromAI('user_id', 'L\\'ID utilisateur récupéré via Find_user', 'string') }}"
+            },
+            {
+              "fieldId": "expires_at",
+              "fieldValue": "={{ $now.plus({ days: 1 }).toISO() }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        -680,
+        420
+      ],
+      "id": "tool-createsession-001",
+      "name": "Create_active_sessions",
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "sessions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "session_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Chat trigger').first().json.body.sessionId }}"
+            }
+          ]
+        },
+        "options": {
+          "limit": 1
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -740,
+        -180
+      ],
+      "id": "get-session-user-001",
+      "name": "Récupérer user_id session",
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "users",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('check_sessions').first().json.user_id }}"
+            }
+          ]
+        },
+        "options": {
+          "limit": 1
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -520,
+        -180
+      ],
+      "id": "get-user-info-001",
+      "name": "Récupérer infos utilisateur",
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "preferences",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "condition": "eq",
+              "keyValue": "={{ $('check_sessions').first().json.user_id }}"
+            }
+          ]
+        },
+        "options": {
+          "limit": 1
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -300,
+        -180
+      ],
+      "id": "get-prefs-001",
+      "name": "Récupérer préférences",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "string-check",
+              "leftValue": "={{ $json.user_id ? 'yes' : 'no' }}",
+              "rightValue": "yes",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "singleValue": false
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -80,
+        -180
+      ],
+      "id": "if-prefs-001",
+      "name": "Préférences configurées?"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.message }}",
+        "options": {
+          "systemMessage": "={{ `Tu es l'assistant principal de Persona pour l'utilisateur ${$('Récupérer infos utilisateur').first()?.json?.username || 'Utilisateur'}.\n\n=== CONTEXTE UTILISATEUR ===\nUsername : ${$('Récupérer infos utilisateur').first()?.json?.username || 'Inconnu'}\nUser ID : ${$('Récupérer infos utilisateur').first()?.json?.id || 'Inconnu'}\nSession ID : ${$('Chat trigger').first().json.body.sessionId || 'Inconnu'}\n\n=== PRÉFÉRENCES ACTUELLES ===\n${JSON.stringify($('Récupérer préférences').first()?.json || {})}\n\n=== TES CAPACITÉS ===\n1. ONBOARDING : Si l'utilisateur n'a pas encore de préférences (topics vides), guide-le pour les configurer.\n   Collecte dans cet ordre : topics (centres d'intérêt), heure de réception (HH:MM UTC), nombre d'articles souhaités (1-10), langue (fr/en).\n   Mentionne le consentement RGPD avant de sauvegarder.\n   Quand tout est collecté, appelle 'save_preferences'.\n\n2. MODIFICATION : L'utilisateur peut changer ses préférences à tout moment.\n   Appelle 'update_preferences' avec les nouvelles valeurs.\n\n3. FEEDBACK : Si l'utilisateur commente une newsletter passée, appelle 'save_feedback'.\n\n4. DÉSINSCRIPTION : Si l'utilisateur veut se désinscrire, confirme son intention, puis appelle 'unsubscribe_user'.\n\n5. PROMPT PERSONNALISÉ : Si l'utilisateur veut customiser le ton/style de sa newsletter, appelle 'update_custom_prompt'.\n\n=== RÈGLES ===\n- Réponds toujours en texte brut convivial.\n- Ne montre jamais de JSON ou données techniques.\n- Ne traite que les données de CET utilisateur uniquement.` }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        200,
+        -180
+      ],
+      "id": "main-agent-001",
+      "name": "Agent Principal (connecté)"
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 30
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        200,
+        20
+      ],
+      "id": "memory-main-001",
+      "name": "Mémoire Principal"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        60,
+        20
+      ],
+      "id": "llm-main-001",
+      "name": "LLM Principal",
+      "credentials": {
+        "openRouterApi": {
+          "id": "OPENROUTER_CREDENTIAL_ID",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Sauvegarde les préférences de newsletter de l'utilisateur. Appelle après avoir collecté tous les paramètres ET obtenu le consentement RGPD explicite.",
+        "tableId": "preferences",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{ $fromAI('user_id', 'L\\'ID de l\\'utilisateur connecté', 'string') }}"
+            },
+            {
+              "fieldId": "topics",
+              "fieldValue": "={{ $fromAI('topics', 'Tableau des centres d\\'intérêt ex: [\"tech\",\"sport\"]', 'string') }}"
+            },
+            {
+              "fieldId": "schedule_time",
+              "fieldValue": "={{ $fromAI('schedule_time', 'Heure d\\'envoi au format HH:MM:SS ex: 08:00:00', 'string') }}"
+            },
+            {
+              "fieldId": "language",
+              "fieldValue": "={{ $fromAI('language', 'Code langue ex: fr ou en', 'string') }}"
+            },
+            {
+              "fieldId": "num_articles",
+              "fieldValue": "={{ $fromAI('num_articles', 'Nombre d\\'articles souhaités entre 1 et 10', 'number') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        420,
+        100
+      ],
+      "id": "tool-saveprefs-001",
+      "name": "save_preferences",
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Met à jour les préférences existantes d'un utilisateur.",
+        "operation": "update",
+        "tableId": "preferences",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "condition": "eq",
+              "keyValue": "={{ $fromAI('user_id', 'L\\'ID de l\\'utilisateur', 'string') }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "topics",
+              "fieldValue": "={{ $fromAI('topics', 'Nouveaux centres d\\'intérêt', 'string') }}"
+            },
+            {
+              "fieldId": "schedule_time",
+              "fieldValue": "={{ $fromAI('schedule_time', 'Nouvelle heure HH:MM:SS', 'string') }}"
+            },
+            {
+              "fieldId": "language",
+              "fieldValue": "={{ $fromAI('language', 'Nouvelle langue', 'string') }}"
+            },
+            {
+              "fieldId": "num_articles",
+              "fieldValue": "={{ $fromAI('num_articles', 'Nouveau nombre d\\'articles', 'number') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        420,
+        -20
+      ],
+      "id": "tool-updateprefs-001",
+      "name": "update_preferences",
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Met à jour le prompt personnalisé de l'utilisateur pour customiser le style de sa newsletter.",
+        "operation": "update",
+        "tableId": "preferences",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "condition": "eq",
+              "keyValue": "={{ $fromAI('user_id', 'L\\'ID de l\\'utilisateur', 'string') }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "custom_prompt",
+              "fieldValue": "={{ $fromAI('custom_prompt', 'Instructions personnalisées pour la newsletter ex: ton humoristique, 3 articles max...', 'string') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        420,
+        -140
+      ],
+      "id": "tool-customprompt-001",
+      "name": "update_custom_prompt",
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Sauvegarde un feedback sur la dernière newsletter reçue. Permet d'améliorer les prochaines éditions.",
+        "operation": "update",
+        "tableId": "newsletter_logs",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "condition": "eq",
+              "keyValue": "={{ $fromAI('user_id', 'L\\'ID de l\\'utilisateur', 'string') }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "feedback",
+              "fieldValue": "={{ $fromAI('feedback', 'Le feedback de l\\'utilisateur sur sa newsletter', 'string') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        420,
+        -260
+      ],
+      "id": "tool-feedback-001",
+      "name": "save_feedback",
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Désinscrit un utilisateur : désactive son compte et anonymise ses données personnelles. À utiliser UNIQUEMENT après confirmation explicite de l'utilisateur.",
+        "operation": "update",
+        "tableId": "users",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $fromAI('user_id', 'L\\'ID de l\\'utilisateur à désinscrire', 'string') }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "is_active",
+              "fieldValue": "=false"
+            },
+            {
+              "fieldId": "email",
+              "fieldValue": "={{ $fromAI('anonymized_email', 'Email anonymisé format: deleted_<user_id>@persona.local', 'string') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        420,
+        -380
+      ],
+      "id": "tool-unsubscribe-001",
+      "name": "unsubscribe_user",
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Marque le consentement RGPD de l'utilisateur dans la table users après confirmation explicite.",
+        "tableId": "users",
+        "operation": "update",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Récupérer infos utilisateur').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "gdpr_consent",
+              "fieldValue": "=true"
+            },
+            {
+              "fieldId": "gdpr_consent_date",
+              "fieldValue": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        200,
+        220
+      ],
+      "id": "gdpr-consent-001",
+      "name": "Marquer consentement RGPD",
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "chatInput",
+              "value": "={{ $('Chat trigger').first().json.body.message }}"
+            },
+            {
+              "name": "sessionId",
+              "value": "={{ $('Chat trigger').first().json.body.sessionId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        -850,
+        120
+      ],
+      "id": "restore-chat-auth-001",
+      "name": "Restore Chat Input Auth"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "chatInput",
+              "value": "={{ $('Chat trigger').first().json.body.message }}"
+            },
+            {
+              "name": "sessionId",
+              "value": "={{ $('Chat trigger').first().json.body.sessionId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        60,
+        -180
+      ],
+      "id": "restore-chat-principal-001",
+      "name": "Restore Chat Input Principal"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.item.json;\nreturn { json: { ...item, is_active: !!item.user_id } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1060,
+        0
+      ],
+      "id": "code-session-check-001",
+      "name": "Compute Session State"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"reply\": \"{{ $json.output }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        400,
+        -180
+      ],
+      "id": "respond-webhook-main",
+      "name": "Respond to Webhook Main"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"reply\": \"{{ $json.output }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -500,
+        120
+      ],
+      "id": "respond-webhook-auth",
+      "name": "Respond to Webhook Auth"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Chat trigger": {
+      "main": [
+        [
+          {
+            "node": "check_sessions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check_sessions": {
+      "main": [
+        [
+          {
+            "node": "Compute Session State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Session active?": {
+      "main": [
+        [
+          {
+            "node": "Récupérer user_id session",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Restore Chat Input Auth",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Récupérer user_id session": {
+      "main": [
+        [
+          {
+            "node": "Récupérer infos utilisateur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Récupérer infos utilisateur": {
+      "main": [
+        [
+          {
+            "node": "Récupérer préférences",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Récupérer préférences": {
+      "main": [
+        [
+          {
+            "node": "Préférences configurées?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Préférences configurées?": {
+      "main": [
+        [
+          {
+            "node": "Restore Chat Input Principal",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Restore Chat Input Principal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mémoire Auth": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agent Auth (non connecté)",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM Auth": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent Auth (non connecté)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "register": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent Auth (non connecté)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find_user": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent Auth (non connecté)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create_active_sessions": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent Auth (non connecté)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mémoire Principal": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agent Principal (connecté)",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM Principal": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent Principal (connecté)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "save_preferences": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent Principal (connecté)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update_preferences": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent Principal (connecté)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update_custom_prompt": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent Principal (connecté)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marquer consentement RGPD": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent Principal (connecté)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "save_feedback": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent Principal (connecté)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "unsubscribe_user": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent Principal (connecté)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Chat Input Auth": {
+      "main": [
+        [
+          {
+            "node": "Agent Auth (non connecté)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Chat Input Principal": {
+      "main": [
+        [
+          {
+            "node": "Agent Principal (connecté)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Session State": {
+      "main": [
+        [
+          {
+            "node": "Session active?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent Principal (connecté)": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook Main",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent Auth (non connecté)": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook Auth",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "Persona"
+    }
+  ]
+}
