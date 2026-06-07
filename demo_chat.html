@@ -3,178 +3,530 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Persona - API Demo</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <title>Persona — Agrégateur d'actualités personnalisé par IA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #0f172a;
-            --chat-bg: rgba(30, 41, 59, 0.7);
-            --primary: #6366f1;
-            --primary-hover: #4f46e5;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --user-msg: #3b82f6;
-            --bot-msg: #334155;
+            --bg-color: #000000;
+            --text-color: #f5f5f7;
+            --text-muted: #86868b;
+            --card-bg: #161617;
+            --card-border: rgba(255, 255, 255, 0.1);
+            --accent-color: #0071e3;
+            --accent-hover: #0077ed;
+            --chat-user-bg: #0071e3;
+            --chat-bot-bg: #1c1c1e;
+            --navbar-bg: rgba(0, 0, 0, 0.7);
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-family);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, var(--bg-color), #000000);
-            color: var(--text-main);
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            line-height: 1.5;
+            padding-top: 64px;
         }
 
-        .container {
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            max-width: 450px;
-            background: var(--chat-bg);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 24px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            height: 64px;
+            background-color: var(--navbar-bg);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 100;
+        }
+
+        .navbar-container {
+            max-width: 1100px;
+            height: 100%;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar-logo {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-color);
+            text-decoration: none;
+            letter-spacing: -0.01em;
+            transition: opacity 0.2s;
+        }
+
+        .navbar-logo:hover {
+            opacity: 0.8;
+        }
+
+        .navbar-links {
+            display: flex;
+            gap: 32px;
+        }
+
+        .navbar-link {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 400;
+            transition: color 0.2s;
+        }
+
+        .navbar-link:hover {
+            color: var(--text-color);
+        }
+
+        .hero {
+            padding: 100px 24px 80px;
+            text-align: center;
+            background: radial-gradient(circle at center top, #1a1a1c, #000000 75%);
+        }
+
+        .hero-container {
+            max-width: 800px;
+            margin: 0 auto;
             display: flex;
             flex-direction: column;
-            height: 80vh;
-            overflow: hidden;
-            animation: fadeIn 0.5s ease-out;
+            align-items: center;
         }
 
-        .header {
-            padding: 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            text-align: center;
-        }
-
-        .header h1 {
-            margin: 0;
-            font-size: 1.2rem;
-            font-weight: 600;
-            background: linear-gradient(to right, #818cf8, #c084fc);
+        .hero-title {
+            font-size: 4.5rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            color: #ffffff;
+            background: linear-gradient(180deg, #ffffff 60%, rgba(255, 255, 255, 0.75));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        .header p {
-            margin: 5px 0 0;
-            font-size: 0.8rem;
+        .hero-subtitle {
+            font-size: 1.45rem;
+            font-weight: 400;
+            line-height: 1.45;
             color: var(--text-muted);
+            max-width: 640px;
+            margin-bottom: 40px;
+            letter-spacing: -0.01em;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 28px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            border-radius: 980px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background-color: #ffffff;
+            color: #000000;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background-color: rgba(255, 255, 255, 0.9);
+            transform: scale(1.02);
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: #2997ff;
+            border: 1px solid rgba(41, 151, 255, 0.35);
+        }
+
+        .btn-secondary:hover {
+            background-color: rgba(41, 151, 255, 0.08);
+            border-color: #2997ff;
+        }
+
+        .demo-section {
+            padding: 60px 24px 80px;
+            background-color: #000000;
+        }
+
+        .demo-container {
+            max-width: 680px;
+            margin: 0 auto;
+        }
+
+        .demo-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            height: 520px;
+        }
+
+        .chat-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background-color: rgba(22, 22, 23, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chat-header-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text-color);
+            letter-spacing: -0.015em;
+        }
+
+        .chat-header-status {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 2px;
         }
 
         .messages {
             flex: 1;
-            padding: 20px;
+            padding: 24px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 18px;
+            background-color: rgba(0, 0, 0, 0.15);
+        }
+
+        .messages::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .messages::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .messages::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.25);
         }
 
         .message {
-            max-width: 80%;
-            padding: 12px 16px;
-            border-radius: 16px;
+            max-width: 75%;
+            padding: 12px 18px;
+            border-radius: 18px;
             font-size: 0.95rem;
-            line-height: 1.4;
-            animation: slideUp 0.3s ease-out;
+            line-height: 1.45;
             word-wrap: break-word;
+            animation: messageFadeIn 0.3s ease-out forwards;
+            opacity: 0;
+            transform: translateY(8px);
+        }
+
+        @keyframes messageFadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .message.bot {
-            background: var(--bot-msg);
+            background-color: var(--chat-bot-bg);
+            color: var(--text-color);
             align-self: flex-start;
             border-bottom-left-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .message.user {
-            background: var(--user-msg);
+            background-color: var(--chat-user-bg);
+            color: #ffffff;
             align-self: flex-end;
             border-bottom-right-radius: 4px;
         }
 
+        .loading {
+            padding: 12px 24px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-style: italic;
+            display: none;
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
         .input-area {
-            padding: 20px;
-            background: rgba(0, 0, 0, 0.2);
+            padding: 20px 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            background-color: rgba(22, 22, 23, 0.95);
             display: flex;
-            gap: 10px;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .input-wrapper {
+            position: relative;
+            flex: 1;
         }
 
         input {
-            flex: 1;
-            padding: 12px 16px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-main);
+            width: 100%;
+            padding: 12px 20px;
+            border-radius: 980px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background-color: rgba(0, 0, 0, 0.3);
+            color: var(--text-color);
             font-family: inherit;
+            font-size: 0.95rem;
             outline: none;
-            transition: border-color 0.2s;
+            transition: all 0.2s ease;
         }
 
         input:focus {
-            border-color: var(--primary);
+            border-color: var(--accent-color);
+            background-color: rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
         }
 
-        button {
-            padding: 0 20px;
-            border-radius: 12px;
+        .send-btn {
+            background-color: var(--accent-color);
+            color: #ffffff;
             border: none;
-            background: var(--primary);
-            color: white;
-            font-weight: 600;
+            padding: 12px 24px;
+            border-radius: 980px;
+            font-weight: 500;
+            font-size: 0.95rem;
             cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
+            transition: all 0.2s ease;
         }
 
-        button:hover {
-            background: var(--primary-hover);
+        .send-btn:hover {
+            background-color: var(--accent-hover);
         }
 
-        button:active {
-            transform: scale(0.95);
+        .send-btn:active {
+            transform: scale(0.97);
         }
 
-        .loading {
-            font-size: 0.8rem;
+        .features-section {
+            padding: 80px 24px;
+            background-color: #08080a;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .features-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 32px;
+        }
+
+        .feature-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 32px;
+            transition: border-color 0.2s ease;
+        }
+
+        .feature-card:hover {
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .feature-icon-wrapper {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background-color: rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            color: var(--accent-color);
+        }
+
+        .feature-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #ffffff;
+        }
+
+        .feature-desc {
+            font-size: 0.95rem;
             color: var(--text-muted);
-            align-self: flex-start;
-            margin-left: 10px;
-            display: none;
+            line-height: 1.55;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        .footer {
+            padding: 60px 24px 80px;
+            background-color: #000000;
+            text-align: center;
         }
 
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .footer-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .footer-text {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .footer-subtext {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.25);
+        }
+
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.8rem;
+            }
+            .hero-subtitle {
+                font-size: 1.2rem;
+            }
+            .features-grid {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+            .navbar-links {
+                gap: 20px;
+            }
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <div class="header">
-            <h1>✨ Persona Bot</h1>
-            <p>Connecté à l'API n8n via Webhook</p>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="#" class="navbar-logo">Persona</a>
+            <div class="navbar-links">
+                <a href="#features" class="navbar-link">Fonctionnalités</a>
+                <a href="#assistant" class="navbar-link">Assistant</a>
+            </div>
         </div>
-        
-        <div class="messages" id="chat-box">
-            <div class="message bot">Bonjour ! Je suis l'API de Persona. De quoi veux-tu parler ?</div>
-        </div>
-        <div class="loading" id="loading-indicator">L'IA réfléchit...</div>
+    </nav>
 
-        <div class="input-area">
-            <input type="text" id="user-input" placeholder="Écris ton message ici..." onkeypress="handleKeyPress(event)" />
-            <button onclick="sendMessage()">Envoyer</button>
+    <header class="hero">
+        <div class="hero-container">
+            <h1 class="hero-title">L'actualité sur mesure.</h1>
+            <p class="hero-subtitle">Votre assistant personnel d'information. Synthétisé par l'intelligence artificielle, livré à votre rythme.</p>
+            <div class="btn-group">
+                <a href="#assistant" class="btn btn-primary">Démarrer l'assistant</a>
+                <a href="#features" class="btn btn-secondary">Découvrir les fonctionnalités</a>
+            </div>
         </div>
-    </div>
+    </header>
+
+    <section id="assistant" class="demo-section">
+        <div class="demo-container">
+            <div class="demo-card">
+                <div class="chat-header">
+                    <div class="chat-header-info">
+                        <span class="chat-header-title">Assistant Personnel</span>
+                        <span class="chat-header-status">Connecté à l'API de traitement</span>
+                    </div>
+                </div>
+                
+                <div class="messages" id="chat-box">
+                    <div class="message bot">Bonjour. Je suis l'assistant Persona. Souhaitez-vous vous inscrire ou configurer vos préférences d'actualités ?</div>
+                </div>
+                <div class="loading" id="loading-indicator">Recherche et synthèse des informations en cours...</div>
+
+                <div class="input-area">
+                    <div class="input-wrapper">
+                        <input type="text" id="user-input" placeholder="Écrivez votre message..." onkeypress="handleKeyPress(event)" />
+                    </div>
+                    <button class="send-btn" onclick="sendMessage()">Envoyer</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="features-section">
+        <div class="features-container">
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="9" y1="9" x2="15" y2="9"></line>
+                            <line x1="9" y1="13" x2="15" y2="13"></line>
+                            <line x1="9" y1="17" x2="13" y2="17"></line>
+                        </svg>
+                    </div>
+                    <h2 class="feature-title">Sélection Intelligente</h2>
+                    <p class="feature-desc">Articles pertinents issus de sources d'information mondiales fiables. L'IA filtre le bruit pour ne retenir que l'essentiel.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                    </div>
+                    <h2 class="feature-title">Planification sur Mesure</h2>
+                    <p class="feature-desc">Définissez vos horaires et fuseaux de réception. Votre newsletter quotidienne arrive précisément au moment idéal.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                    </div>
+                    <h2 class="feature-title">Respect de la Vie Privée</h2>
+                    <p class="feature-desc">Plateforme entièrement conforme aux exigences du RGPD. Désabonnement instantané et suppression complète des données.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="footer-container">
+            <p class="footer-text">&copy; 2026 Persona. Conçu avec rigueur et simplicité.</p>
+            <p class="footer-subtext">Conformité RGPD garantie. Vos données ne sont jamais partagées.</p>
+        </div>
+    </footer>
 
     <script>
         const N8N_WEBHOOK_URL = 'https://your-n8n-instance.example.com/webhook/api-chat';
@@ -201,36 +553,31 @@
             const text = userInput.value.trim();
             if (!text) return;
 
-            // 1. Afficher le message de l'utilisateur
             appendMessage(text, 'user');
             userInput.value = '';
             
-            // 2. Afficher "L'IA réfléchit..."
             loading.style.display = 'block';
 
             try {
-                // 3. Appel de l'API (n8n Webhook)
                 const response = await fetch(N8N_WEBHOOK_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        sessionId: "demo_user_123", // Identifiant fictif pour la démo
+                        sessionId: "demo_user_123",
                         message: text
                     })
                 });
 
                 if (!response.ok) throw new Error("Erreur serveur API");
 
-                // 4. On attend que n8n réponde avec un JSON
                 const data = await response.json();
                 
-                // 5. Afficher la réponse de l'IA (en supposant que n8n renvoie { "reply": "..." })
-                const botReply = data.reply || "Réponse reçue, mais le format JSON de l'API doit être adapté.";
+                const botReply = data.reply || "Réponse reçue, mais le format de l'API doit être adapté.";
                 appendMessage(botReply, 'bot');
 
             } catch (error) {
                 console.error(error);
-                appendMessage("Oups, l'API n8n n'a pas répondu.", 'bot');
+                appendMessage("Oups, l'API n'a pas répondu.", 'bot');
             } finally {
                 loading.style.display = 'none';
             }
