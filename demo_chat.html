@@ -572,7 +572,7 @@
 
                 const data = await response.json();
                 
-                const botReply = data.reply || "Réponse reçue, mais le format de l'API doit être adapté.";
+                const botReply = data.output || "Réponse reçue, mais le format de l'API doit être adapté.";
                 appendMessage(botReply, 'bot');
 
             } catch (error) {
