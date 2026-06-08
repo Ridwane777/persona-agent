@@ -255,6 +255,7 @@
       ],
       "id": "cc3689a9-645f-4f33-8cd8-21722050dd72",
       "name": "Désactiver compte",
+      "alwaysOutputData": true,
       "credentials": {
         "supabaseApi": {
           "id": "SUPABASE_CREDENTIAL_ID",
@@ -284,6 +285,7 @@
       ],
       "id": "2f4dc6b9-3375-42f1-9cd8-a0b694492781",
       "name": "Supprimer préférences",
+      "alwaysOutputData": true,
       "credentials": {
         "supabaseApi": {
           "id": "SUPABASE_CREDENTIAL_ID",
@@ -313,6 +315,7 @@
       ],
       "id": "344f9f76-e71c-43da-ab61-2e1d017e412e",
       "name": "Supprimer sessions",
+      "alwaysOutputData": true,
       "credentials": {
         "supabaseApi": {
           "id": "SUPABASE_CREDENTIAL_ID",
