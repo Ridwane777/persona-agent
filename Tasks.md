@@ -1,194 +1,194 @@
 # Tasks — Persona
-> Grille d'avancement : ce qui est implémenté, ce qui manque comme preuve ou document.
+> Progress tracker: what is implemented and what evidence or documentation is still missing.
 
 ---
 
-## MUST — Fonctionnalités obligatoires
+## Core features
 
-### MUST 1 — Chatbot trigger & authentification
+### 1 — Chatbot trigger & authentication
 
-| Sous-exigence | Statut | Preuve dans le projet | Ce qui manque |
+| Requirement | Status | Evidence in the project | Missing |
 |---|:---:|---|---|
-| Chat Trigger actif et accessible via URL | ✅ Fait | Nœud `Chat trigger` dans Workflow A | — |
-| Inscription (username, email, mot de passe) | ✅ Fait | Nœud `register` (Supabase tool) + `Agent Auth` | — |
-| Connexion via chatbot | ✅ Fait | Nœud `Find_user` + `Create_active_sessions` | — |
-| Hachage du mot de passe (SHA-256) | ✅ Fait | Documenté dans README (section Sécurité) | Pas de nœud Code visible avec le hash — **montrer le code JS du hachage en démo** |
-| Système de sessions avec `session_id` | ✅ Fait | Nœuds `check_sessions`, `Compute Session State` | — |
-| Expiration des sessions (24h) | ✅ Fait | README mentionne 24h, table `sessions` avec `expires_at` | **Montrer en démo** qu'une session expirée est bien rejetée |
-| Blocage d'un user non authentifié | ✅ Fait | Nœud `IF: Session active?` → branching vers `Agent Auth` | — |
-| Isolation des données entre utilisateurs | ✅ Fait | L'agent principal reçoit le `user_id` de session | Voir `SECURITY.md` pour l'isolation technique |
-| Protection contre acteurs malveillants | ✅ Fait | Session + hash suffisent pour les bases | Voir `SECURITY.md` pour l'audit de sécurité |
+| Chat Trigger active and reachable via URL | ✅ Done | `Chat trigger` node in Workflow A | — |
+| Sign-up (username, email, password) | ✅ Done | `register` node (Supabase tool) + `Agent Auth` | — |
+| Login via chatbot | ✅ Done | `Find_user` + `Create_active_sessions` nodes | — |
+| Password hashing | ❌ Not implemented | Password stored as provided by the LLM tool call | Add a Crypto/bcrypt node before insert (see `SECURITY.md`) |
+| Session system with `session_id` | ✅ Done | `check_sessions`, `Compute Session State` nodes | — |
+| Session expiry (24h) | ✅ Done | README mentions 24h, `sessions` table with `expires_at` | **Show in the demo** that an expired session is rejected |
+| Block unauthenticated users | ✅ Done | `IF: Session active?` node → branches to `Agent Auth` | — |
+| Data isolation between users | ✅ Done | The main agent receives the session `user_id` | See `SECURITY.md` for technical isolation |
+| Protection against malicious actors | ✅ Done | Sessions + hashing cover the basics | See `SECURITY.md` for the security audit |
 
 ---
 
-### MUST 2 — Onboarding utilisateur via le chatbot
+### 2 — User onboarding via the chatbot
 
-| Sous-exigence | Statut | Preuve dans le projet | Ce qui manque |
+| Requirement | Status | Evidence in the project | Missing |
 |---|:---:|---|---|
-| Collecte des centres d'intérêt (topics) | ✅ Fait | `save_preferences` (Supabase tool), table `preferences.topics` | — |
-| Collecte de l'email | ✅ Fait | Table `users.email`, flow d'inscription dans `Agent Auth` | — |
-| Collecte de l'horaire souhaité | ✅ Fait | `preferences.schedule_time` + `schedule_tz` | — |
-| Collecte de la langue | ✅ Fait | `preferences.language` | — |
-| Collecte du nombre d'articles | ✅ Fait | `preferences.num_articles` | — |
-| Modification des préférences après inscription | ✅ Fait | Nœud `update_preferences` dans `Agent Principal` | — |
-| Confirmation avant sauvegarde | ⚠️ Non vérifié | Dépend du system prompt de l'agent (non visible en entier) | **Démontrer en démo** que l'agent récapitule les préférences avant de les enregistrer |
-| Guidage conversationnel étape par étape | ⚠️ Non vérifié | Dépend du comportement LLM à l'exécution | **Capture d'une conversation d'onboarding complète** à inclure en annexe |
+| Collect interests (topics) | ✅ Done | `save_preferences` (Supabase tool), `preferences.topics` table | — |
+| Collect email | ✅ Done | `users.email` table, sign-up flow in `Agent Auth` | — |
+| Collect preferred schedule | ✅ Done | `preferences.schedule_time` + `schedule_tz` | — |
+| Collect language | ✅ Done | `preferences.language` | — |
+| Collect number of articles | ✅ Done | `preferences.num_articles` | — |
+| Edit preferences after sign-up | ✅ Done | `update_preferences` node in `Agent Principal` | — |
+| Confirmation before saving | ⚠️ Not verified | Depends on the agent's system prompt (not fully visible) | **Show in the demo** that the agent summarizes preferences before saving them |
+| Step-by-step conversational guidance | ⚠️ Not verified | Depends on LLM behavior at runtime | **Screenshot of a full onboarding conversation** |
 
 ---
 
-### MUST 3 — Récupération des news depuis plusieurs sources
+### 3 — Fetch news from multiple sources
 
-| Sous-exigence | Statut | Preuve dans le projet | Ce qui manque |
+| Requirement | Status | Evidence in the project | Missing |
 |---|:---:|---|---|
-| Source 1 : NewsAPI | ✅ Fait | Nœud `NewsAPI` (HTTP Request) dans Workflow B | — |
-| Source 2 : The Guardian API | ✅ Fait | Nœud `The Guardian API` (HTTP Request) dans Workflow B | — |
-| Source 3 : RSS BBC News | ✅ Fait | Nœud `RSS BBC News` dans Workflow B | — |
-| Fusion des sources | ✅ Fait | Nœud `Fusionner sources` (Merge) | — |
-| Normalisation des formats d'articles | ✅ Fait | Nœud `Normaliser + Dédup + Fact-check` (Code JS) | — |
-| Déduplication par URL | ✅ Fait | Code JS dans `Normaliser + Dédup + Fact-check` | — |
-| Minimum 2 sources actives | ✅ Fait | 3 sources présentes | — |
+| Source 1: NewsAPI | ✅ Done | `NewsAPI` node (HTTP Request) in Workflow B | — |
+| Source 2: The Guardian API | ✅ Done | `The Guardian API` node (HTTP Request) in Workflow B | — |
+| Source 3: BBC News RSS | ✅ Done | `RSS BBC News` node in Workflow B | — |
+| Merge sources | ✅ Done | `Fusionner sources` node (Merge) | — |
+| Normalize article formats | ✅ Done | `Normaliser + Dédup + Fact-check` node (JS Code) | — |
+| Deduplicate by URL | ✅ Done | JS code in `Normaliser + Dédup + Fact-check` | — |
+| At least 2 active sources | ✅ Done | 3 sources present | — |
 
 ---
 
-### MUST 4 — Filtrage IA par utilisateur
+### 4 — Per-user AI filtering
 
-| Sous-exigence | Statut | Preuve dans le projet | Ce qui manque |
+| Requirement | Status | Evidence in the project | Missing |
 |---|:---:|---|---|
-| Filtrage par topics utilisateur | ✅ Fait | Nœud `IA — Filtrage et résumé` (LLM Chain) | — |
-| Résumé de chaque article en 2-3 phrases | ✅ Fait | Prompt dans le nœud LLM + `Parser réponse IA` | — |
-| Respect du nombre d'articles voulu (`num_articles`) | ✅ Fait | Code dans `Parser réponse IA` applique la limite | — |
-| Réponse dans la langue de l'utilisateur | ✅ Fait | `language` injecté dans le prompt LLM | — |
-| Fallback si parsing IA échoue | ✅ Fait | `Parser réponse IA` utilise les articles originaux en fallback | — |
-| Respect du `custom_prompt` utilisateur | ✅ Fait | `custom_prompt` injecté dans le prompt LLM de `IA — Filtrage et résumé` | ✅ Vérifié et confirmé fonctionnel le 4 Juin 2026 |
+| Filter by user topics | ✅ Done | `IA — Filtrage et résumé` node (LLM Chain) | — |
+| Summarize each article in 2-3 sentences | ✅ Done | Prompt in the LLM node + `Parser réponse IA` | — |
+| Respect the requested article count (`num_articles`) | ✅ Done | Code in `Parser réponse IA` applies the limit | — |
+| Reply in the user's language | ✅ Done | `language` injected into the LLM prompt | — |
+| Fallback if AI parsing fails | ✅ Done | `Parser réponse IA` falls back to the original articles | — |
+| Honor the user's `custom_prompt` | ✅ Done | `custom_prompt` injected into the `IA — Filtrage et résumé` prompt | ✅ Verified working on June 4, 2026 |
 
 ---
 
-### MUST 5 — Envoi de la newsletter par email
+### 5 — Email delivery
 
-| Sous-exigence | Statut | Preuve dans le projet | Ce qui manque |
+| Requirement | Status | Evidence in the project | Missing |
 |---|:---:|---|---|
-| Envoi via Gmail OAuth2 | ✅ Fait | Nœud `Envoyer newsletter` (Gmail) dans Workflow B | — |
-| Email en format HTML | ✅ Fait | Nœud `Construire email HTML` (Code JS) | — |
-| Lien de désinscription dans l'email | ✅ Fait | Code HTML inclut un lien `/unsubscribe?uid=...&token=...` | — |
-| Lien de modification des préférences | ✅ Fait | README indique un lien vers le chatbot dans l'email | — |
-| Logging de l'envoi en base | ✅ Fait | Nœud `Logger envoi` (Supabase INSERT dans `newsletter_logs`) | — |
-| **Capture d'un email reçu réel** | ❌ Manquant | Rien dans le repo | **Fournir une capture d'écran d'un email reçu** pour la démo/keynote |
+| Send via Gmail OAuth2 | ✅ Done | `Envoyer newsletter` node (Gmail) in Workflow B | — |
+| HTML email | ✅ Done | `Construire email HTML` node (JS Code) | — |
+| Unsubscribe link in the email | ✅ Done | HTML includes a `/unsubscribe?uid=...&token=...` link | — |
+| Edit-preferences link | ✅ Done | README mentions a chatbot link in the email | — |
+| Log delivery in the database | ✅ Done | `Logger envoi` node (Supabase INSERT into `newsletter_logs`) | — |
+| **Screenshot of a real received email** | ✅ Done | `assets/newsletter-email.png` | — |
 
 ---
 
-### MUST 6 — Planification par utilisateur
+### 6 — Per-user scheduling
 
-| Sous-exigence | Statut | Preuve dans le projet | Ce qui manque |
+| Requirement | Status | Evidence in the project | Missing |
 |---|:---:|---|---|
-| Webhook Trigger (cron externe) | ✅ Fait | Trigger remplacé par Webhook, déclenché par `cron-job.org` toutes les minutes | — |
-| Calcul de l'heure UTC courante | ✅ Fait | Nœud `Calculer heure UTC` (Code JS) | — |
-| Comparaison heure courante vs heure utilisateur (minute) | ✅ Fait | Nœud `Vérifier horaire` (Code JS avec `Intl.DateTimeFormat`, résolution HH:mm) | — |
-| Support des timezones africaines et mondiales | ✅ Fait | `Intl.DateTimeFormat` + README liste les timezones supportées | — |
-| Boucle par utilisateur (`SplitInBatches`) | ✅ Fait | Nœud `Loop Users` dans Workflow B | — |
-| Ne traite que les users actifs | ✅ Fait | Nœud `Utilisateurs actifs` filtre `is_active = true` | — |
-| **Déploiement cloud production** | ✅ Fait | Web Service Render (`your-n8n-instance.example.com`) + keep-alive cron-job.org | — |
-| **Preuve d'envoi à la bonne heure** | ❌ Manquant | Rien dans le repo | **Log Supabase ou capture** montrant `sent_at` correspondant à l'horaire configuré |
+| Webhook trigger (external cron) | ✅ Done | Trigger replaced by a Webhook, called by `cron-job.org` every minute | — |
+| Compute current UTC time | ✅ Done | `Calculer heure UTC` node (JS Code) | — |
+| Compare current time vs user time (minute) | ✅ Done | `Vérifier horaire` node (JS Code with `Intl.DateTimeFormat`, HH:mm resolution) | — |
+| African and worldwide timezone support | ✅ Done | `Intl.DateTimeFormat` + README lists supported timezones | — |
+| Per-user loop (`SplitInBatches`) | ✅ Done | `Loop Users` node in Workflow B | — |
+| Only process active users | ✅ Done | `Utilisateurs actifs` node filters `is_active = true` | — |
+| **Production cloud deployment** | ✅ Done | Render Web Service (`your-n8n-instance.example.com`) + cron-job.org keep-alive | — |
+| **Proof of on-time delivery** | ⚠️ Partial | `assets/db-newsletter-logs.png` | Show that `sent_at` matches the configured schedule |
 
 ---
 
-### MUST 7 — RGPD de base & désinscription
+### 7 — Basic GDPR & unsubscribe
 
-| Sous-exigence | Statut | Preuve dans le projet | Ce qui manque |
+| Requirement | Status | Evidence in the project | Missing |
 |---|:---:|---|---|
-| Consentement explicite demandé à l'inscription | ✅ Fait | Nœud `Marquer consentement RGPD` dans Workflow A | **Montrer en démo** que le chatbot pose la question de consentement |
-| `gdpr_consent` et `gdpr_consent_date` en base | ✅ Fait | Table `users`, README section RGPD | — |
-| Désinscription via le chatbot | ✅ Fait | Nœud `unsubscribe_user` dans `Agent Principal` | — |
-| Désinscription via lien dans l'email (Workflow C) | ✅ Fait | Workflow C complet (8 nœuds) | — |
-| Token HMAC sécurisé sur le lien de désinscription | ✅ Fait | Code JS dans `Construire email HTML` + `Vérifier token` (Workflow C) | Le token actuel utilise un hash bit-shift simple, **pas un vrai HMAC** — à signaler ou corriger |
-| Anonymisation de l'email à la désinscription | ✅ Fait | Nœud `Désactiver compte` dans Workflow C, README confirme `deleted_...` | — |
-| Suppression des préférences et sessions | ✅ Fait | Nœuds `Supprimer préférences` et `Supprimer sessions` dans Workflow C | — |
-| Page de confirmation HTML après désinscription | ✅ Fait | Nœud `Répondre succès` (Respond to Webhook) dans Workflow C | — |
-| Page d'erreur si token invalide | ✅ Fait | Nœud `Répondre erreur` (Workflow C) | — |
-| **Document de conformité RGPD** | ✅ Fait | Fichier `GDPR.md` à la racine | — |
+| Explicit consent requested at sign-up | ✅ Done | `Marquer consentement RGPD` node in Workflow A | **Show in the demo** that the chatbot asks for consent |
+| `gdpr_consent` and `gdpr_consent_date` in the database | ✅ Done | `users` table, README GDPR section | — |
+| Unsubscribe via the chatbot | ✅ Done | `unsubscribe_user` node in `Agent Principal` | — |
+| Unsubscribe via email link (Workflow C) | ✅ Done | Full Workflow C (8 nodes) | — |
+| Secure token on the unsubscribe link | ✅ Done | JS code in `Construire email HTML` + `Vérifier token` (Workflow C) | The current token uses a simple bit-shift hash, **not a real HMAC** — flag or fix |
+| Anonymize email on unsubscribe | ✅ Done | `Désactiver compte` node in Workflow C, README confirms `deleted_...` | — |
+| Delete preferences and sessions | ✅ Done | `Supprimer préférences` and `Supprimer sessions` nodes in Workflow C | — |
+| HTML confirmation page after unsubscribe | ✅ Done | `Répondre succès` node (Respond to Webhook) in Workflow C | — |
+| Error page on invalid token | ✅ Done | `Répondre erreur` node (Workflow C) | — |
+| **GDPR compliance document** | ✅ Done | `GDPR.md` at the root | — |
 
 ---
 
-## COULD — Fonctionnalités bonus
+## Extra features
 
-### COULD 1 — Newsletter en HTML
+### 1 — HTML newsletter
 
-| Sous-exigence | Statut | Preuve dans le projet | Ce qui manque |
+| Requirement | Status | Evidence in the project | Missing |
 |---|:---:|---|---|
-| Email au format HTML structuré | ✅ Fait | Nœud `Construire email HTML` génère un template complet | — |
-| Design responsive et lisible | ✅ Fait | Template table-based avec styles inline | — |
-| Cartes d'articles avec titre, source, résumé, lien | ✅ Fait | Code JS confirme la structure des cartes | **Capture d'écran de l'email rendu** pour la démo |
+| Structured HTML email | ✅ Done | `Construire email HTML` node generates a full template | — |
+| Responsive, readable design | ✅ Done | Table-based template with inline styles | — |
+| Article cards with title, source, summary, link | ✅ Done | JS code confirms the card structure | — |
 
 ---
 
-### COULD 2 — Commentaires sur les newsletters passées
+### 2 — Feedback on past newsletters
 
-| Sous-exigence | Statut | Preuve dans le projet | Ce qui manque |
+| Requirement | Status | Evidence in the project | Missing |
 |---|:---:|---|---|
-| L'utilisateur peut donner du feedback via le chatbot | ✅ Fait | Nœud `save_feedback` dans `Agent Principal` (Workflow A) | — |
-| Feedback donné via lien email (Workflow C) | ✅ Fait | Webhook `/feedback` avec UPDATE sur `newsletter_logs` filtré par `newsletter_id` | — |
-| Feedback stocké en base (`newsletter_logs.feedback`) | ✅ Fait | Table `newsletter_logs` avec colonne `feedback` | — |
-| Feedback réinjecté dans le prompt du prochain envoi | ✅ Fait | `Récupérer feedbacks passés` s'exécute avant `Fusionner user + prefs` (séquentiel) | — |
+| User can give feedback via the chatbot | ✅ Done | `save_feedback` node in `Agent Principal` (Workflow A) | — |
+| Feedback via email link (Workflow C) | ✅ Done | `/feedback` webhook with UPDATE on `newsletter_logs` filtered by `newsletter_id` | — |
+| Feedback stored in the database (`newsletter_logs.feedback`) | ✅ Done | `newsletter_logs` table with a `feedback` column | — |
+| Feedback fed back into the next prompt | ✅ Done | `Récupérer feedbacks passés` runs before `Fusionner user + prefs` (sequential) | — |
 
 ---
 
-### COULD 3 — Fact-checking
+### 3 — Fact-checking
 
-| Sous-exigence | Statut | Preuve dans le projet | Ce qui manque |
+| Requirement | Status | Evidence in the project | Missing |
 |---|:---:|---|---|
-| Vérification croisée entre sources | ✅ Fait | Nœud `Normaliser + Dédup + Fact-check` calcule un `factCheckScore` | — |
-| Score de confirmation par article | ✅ Fait | `factCheckScore` transmis via `Agréger pour l'IA` | — |
-| Priorisation des articles multi-sources | ✅ Fait | Prompt LLM instruit de prioriser les articles avec score élevé | — |
-| Fact-checking par LLM secondaire | ❌ Non implémenté | Pas de second appel LLM dédié | Non requis pour la démo, à mentionner comme piste d'amélioration |
+| Cross-source verification | ✅ Done | `Normaliser + Dédup + Fact-check` node computes a `factCheckScore` | — |
+| Per-article confirmation score | ✅ Done | `factCheckScore` passed through `Agréger pour l'IA` | — |
+| Prioritize multi-source articles | ✅ Done | LLM prompt instructed to prioritize high-score articles | — |
+| Fact-checking by a secondary LLM | ❌ Not implemented | No dedicated second LLM call | Possible improvement |
 
 ---
 
-### COULD 4 — Prompt personnalisé par utilisateur
+### 4 — Per-user custom prompt
 
-| Sous-exigence | Statut | Preuve dans le projet | Ce qui manque |
+| Requirement | Status | Evidence in the project | Missing |
 |---|:---:|---|---|
-| L'utilisateur peut définir un `custom_prompt` via le chatbot | ✅ Fait | Nœud `update_custom_prompt` dans `Agent Principal` (Workflow A) | — |
-| `custom_prompt` stocké en base | ✅ Fait | Colonne `preferences.custom_prompt` | — |
-| `custom_prompt` transmis au LLM de la newsletter | ✅ Fait | `IA — Filtrage et résumé` injecte réellement le `custom_prompt` dans le prompt | ✅ Confirmé fonctionnel le 4 Juin 2026 |
+| User can set a `custom_prompt` via the chatbot | ✅ Done | `update_custom_prompt` node in `Agent Principal` (Workflow A) | — |
+| `custom_prompt` stored in the database | ✅ Done | `preferences.custom_prompt` column | — |
+| `custom_prompt` passed to the newsletter LLM | ✅ Done | `IA — Filtrage et résumé` injects the `custom_prompt` into the prompt | ✅ Verified working on June 4, 2026 |
 
 ---
 
-## COULDs du sujet non couverts dans le guide
+## Other ideas not covered
 
-| Fonctionnalité | Statut | Note |
+| Feature | Status | Note |
 |---|:---:|---|
-| Paiement / abonnement premium | ❌ Non implémenté | Non prioritaire |
-| Référencer un autre utilisateur (profil public) | ❌ Non implémenté | Non prioritaire |
-| Publicités ciblées dans les newsletters | ❌ Non implémenté | Non prioritaire (soulève des enjeux RGPD complexes) |
-| Endpoints exposés (site web, Discord, email entrant) | ✅ Implémenté | `Persona_workflow_A_API.json` + `demo_chat.html` — API REST POST `/webhook/api-chat` |
-| Newsletter multi-format (blog, réseaux sociaux, version imprimable) | ❌ Non implémenté | À mentionner comme évolution future |
-| Multimédia généré par IA | ❌ Non implémenté | À mentionner comme évolution future |
+| Payment / premium subscription | ❌ Not implemented | Low priority |
+| Refer another user (public profile) | ❌ Not implemented | Low priority |
+| Targeted ads in newsletters | ❌ Not implemented | Low priority (raises complex GDPR issues) |
+| Exposed endpoints (website, Discord, inbound email) | ✅ Implemented | `Persona_workflow_A_API.json` + `demo_chat.html` — REST API POST `/webhook/api-chat` |
+| Multi-format newsletter (blog, social, printable) | ❌ Not implemented | Future improvement |
+| AI-generated media | ❌ Not implemented | Future improvement |
 
 ---
 
-## Documents & preuves manquants (récapitulatif)
+## Missing documents & evidence (summary)
 
-| # | Document / Preuve | Priorité | Pour la démo ? |
+| # | Document / evidence | Priority | For the demo? |
 |---|---|:---:|:---:|
-| 1 | **Capture d'écran d'un email reçu** (newsletter HTML complète) | 🔴 Critique | ✅ Oui |
-| 2 | **Log Supabase** montrant un envoi à l'heure configurée (`newsletter_logs`) | 🔴 Critique | ✅ Oui |
-| 3 | **Capture d'une conversation d'onboarding complète** (inscription → préfs → confirmation) | 🔴 Critique | ✅ Oui |
-| 4 | **Audit de sécurité complet** (SECURITY.md) | 🟢 Fait | ✅ Oui |
-| 5 | **Note de conformité RGPD** (GDPR.md) | 🟢 Fait | ✅ Oui |
-| 6 | **Vérification du token de désinscription** (token hash avec sel secret) | 🟢 Fait | ⚠️ Utile |
-| 7 | **Preuve que le `custom_prompt` est injecté dans le LLM B** (Workflow B JSON) | ✅ Vérifié | — |
-| 8 | **Implémentation COULD 2** : feedback réinjecté dans le prompt | ✅ Vérifié | — |
-| 9 | **Mention de `factCheckScore` dans le prompt LLM** | 🟢 Fait | ❌ Non |
-| 10 | **Démo de l'API REST** via `demo_chat.html` (endpoint `/webhook/api-chat`) | 🟢 Fait | ✅ Oui |
+| 1 | **Screenshot of a received email** (full HTML newsletter) | 🟢 Done (`assets/newsletter-email.png`) | ✅ Yes |
+| 2 | **Supabase log** showing a delivery at the configured time (`newsletter_logs`) | 🟠 Partial (`assets/db-newsletter-logs.png`) | ✅ Yes |
+| 3 | **Screenshot of a full onboarding conversation** (sign-up → prefs → confirmation) | 🔴 Critical | ✅ Yes |
+| 4 | **Full security audit** (SECURITY.md) | 🟢 Done | ✅ Yes |
+| 5 | **GDPR compliance note** (GDPR.md) | 🟢 Done | ✅ Yes |
+| 6 | **Unsubscribe token verification** (hash with secret salt) | 🟢 Done | ⚠️ Useful |
+| 7 | **Proof that `custom_prompt` is injected into the Workflow B LLM** (Workflow B JSON) | ✅ Verified | — |
+| 8 | **Feedback fed back into the prompt** | ✅ Verified | — |
+| 9 | **`factCheckScore` mentioned in the LLM prompt** | 🟢 Done | ❌ No |
+| 10 | **REST API demo** via `demo_chat.html` (endpoint `/webhook/api-chat`) | 🟢 Done | ✅ Yes |
 
 ---
 
-## Légende
+## Legend
 
-| Icône | Signification |
+| Icon | Meaning |
 |:---:|---|
-| ✅ Fait | Implémenté et visible dans les workflows JSON |
-| ⚠️ Partiel | Partiellement implémenté ou non vérifiable sans exécution |
-| ❌ Non implémenté | Absent du projet |
-| 🔴 Critique | Bloquant pour la note ou la démo |
-| 🟠 Important | Attendu pour un projet complet |
-| 🟡 Secondaire | Bonus, améliore la note |
+| ✅ Done | Implemented and visible in the workflow JSON |
+| ⚠️ Partial | Partially implemented or not verifiable without running it |
+| ❌ Not implemented | Not in the project |
+| 🔴 Critical | Blocking for the demo |
+| 🟠 Important | Expected for a complete project |
+| 🟡 Minor | Nice to have |

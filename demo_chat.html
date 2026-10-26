@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Persona — Agrégateur d'actualités personnalisé par IA</title>
+    <title>Persona — AI-powered personalized news</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -441,7 +441,7 @@
         <div class="navbar-container">
             <a href="#" class="navbar-logo">Persona</a>
             <div class="navbar-links">
-                <a href="#features" class="navbar-link">Fonctionnalités</a>
+                <a href="#features" class="navbar-link">Features</a>
                 <a href="#assistant" class="navbar-link">Assistant</a>
             </div>
         </div>
@@ -449,11 +449,11 @@
 
     <header class="hero">
         <div class="hero-container">
-            <h1 class="hero-title">L'actualité sur mesure.</h1>
-            <p class="hero-subtitle">Votre assistant personnel d'information. Synthétisé par l'intelligence artificielle, livré à votre rythme.</p>
+            <h1 class="hero-title">News, tailored to you.</h1>
+            <p class="hero-subtitle">Your personal news assistant. Summarized by AI, delivered on your schedule.</p>
             <div class="btn-group">
-                <a href="#assistant" class="btn btn-primary">Démarrer l'assistant</a>
-                <a href="#features" class="btn btn-secondary">Découvrir les fonctionnalités</a>
+                <a href="#assistant" class="btn btn-primary">Start the assistant</a>
+                <a href="#features" class="btn btn-secondary">Explore features</a>
             </div>
         </div>
     </header>
@@ -463,21 +463,21 @@
             <div class="demo-card">
                 <div class="chat-header">
                     <div class="chat-header-info">
-                        <span class="chat-header-title">Assistant Personnel</span>
-                        <span class="chat-header-status">Connecté à l'API de traitement</span>
+                        <span class="chat-header-title">Personal Assistant</span>
+                        <span class="chat-header-status">Connected to the processing API</span>
                     </div>
                 </div>
                 
                 <div class="messages" id="chat-box">
-                    <div class="message bot">Bonjour. Je suis l'assistant Persona. Souhaitez-vous vous inscrire ou configurer vos préférences d'actualités ?</div>
+                    <div class="message bot">Hello, I'm the Persona assistant. Would you like to sign up or set your news preferences?</div>
                 </div>
-                <div class="loading" id="loading-indicator">Recherche et synthèse des informations en cours...</div>
+                <div class="loading" id="loading-indicator">Searching and summarizing news...</div>
 
                 <div class="input-area">
                     <div class="input-wrapper">
-                        <input type="text" id="user-input" placeholder="Écrivez votre message..." onkeypress="handleKeyPress(event)" />
+                        <input type="text" id="user-input" placeholder="Type your message..." onkeypress="handleKeyPress(event)" />
                     </div>
-                    <button class="send-btn" onclick="sendMessage()">Envoyer</button>
+                    <button class="send-btn" onclick="sendMessage()">Send</button>
                 </div>
             </div>
         </div>
@@ -495,8 +495,8 @@
                             <line x1="9" y1="17" x2="13" y2="17"></line>
                         </svg>
                     </div>
-                    <h2 class="feature-title">Sélection Intelligente</h2>
-                    <p class="feature-desc">Articles pertinents issus de sources d'information mondiales fiables. L'IA filtre le bruit pour ne retenir que l'essentiel.</p>
+                    <h2 class="feature-title">Smart Selection</h2>
+                    <p class="feature-desc">Relevant articles from trusted global news sources. AI filters out the noise and keeps what matters.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon-wrapper">
@@ -505,8 +505,8 @@
                             <polyline points="12 6 12 12 16 14"></polyline>
                         </svg>
                     </div>
-                    <h2 class="feature-title">Planification sur Mesure</h2>
-                    <p class="feature-desc">Définissez vos horaires et fuseaux de réception. Votre newsletter quotidienne arrive précisément au moment idéal.</p>
+                    <h2 class="feature-title">Custom Scheduling</h2>
+                    <p class="feature-desc">Choose your delivery time and time zone. Your daily newsletter arrives exactly when you want it.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon-wrapper">
@@ -514,8 +514,8 @@
                             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                         </svg>
                     </div>
-                    <h2 class="feature-title">Respect de la Vie Privée</h2>
-                    <p class="feature-desc">Plateforme entièrement conforme aux exigences du RGPD. Désabonnement instantané et suppression complète des données.</p>
+                    <h2 class="feature-title">Privacy First</h2>
+                    <p class="feature-desc">Built for GDPR compliance. Instant unsubscribe and full data deletion.</p>
                 </div>
             </div>
         </div>
@@ -523,8 +523,8 @@
 
     <footer class="footer">
         <div class="footer-container">
-            <p class="footer-text">&copy; 2026 Persona. Conçu avec rigueur et simplicité.</p>
-            <p class="footer-subtext">Conformité RGPD garantie. Vos données ne sont jamais partagées.</p>
+            <p class="footer-text">&copy; 2026 Persona. Built with care and simplicity.</p>
+            <p class="footer-subtext">GDPR compliant. Your data is never shared.</p>
         </div>
     </footer>
 
@@ -568,16 +568,16 @@
                     })
                 });
 
-                if (!response.ok) throw new Error("Erreur serveur API");
+                if (!response.ok) throw new Error("API server error");
 
                 const data = await response.json();
                 
-                const botReply = data.output || "Réponse reçue, mais le format de l'API doit être adapté.";
+                const botReply = data.output || "Response received, but the API format needs adjusting.";
                 appendMessage(botReply, 'bot');
 
             } catch (error) {
                 console.error(error);
-                appendMessage("Oups, l'API n'a pas répondu.", 'bot');
+                appendMessage("Oops, the API did not respond.", 'bot');
             } finally {
                 loading.style.display = 'none';
             }

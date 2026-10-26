@@ -1,11 +1,11 @@
-# Persona — Guide de mise en service
+# Persona — Setup Guide
 
-## Avant d'importer les workflows
+## Before importing the workflows
 
-### 1. Tables Supabase à créer (SQL Editor)
+### 1. Supabase tables to create (SQL Editor)
 
 ```sql
--- Table utilisateurs
+-- Users table
 CREATE TABLE users (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   username      TEXT UNIQUE NOT NULL,
@@ -17,7 +17,7 @@ CREATE TABLE users (
   gdpr_consent_date TIMESTAMP
 );
 
--- Table préférences
+-- Preferences table
 CREATE TABLE preferences (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id       UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -29,7 +29,7 @@ CREATE TABLE preferences (
   num_articles  INT DEFAULT 5
 );
 
--- Table logs newsletter
+-- Newsletter logs table
 CREATE TABLE newsletter_logs (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id       UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -43,7 +43,7 @@ CREATE TABLE newsletter_logs (
   updated_at    TIMESTAMP DEFAULT now()
 );
 
--- Table sessions
+-- Sessions table
 CREATE TABLE sessions (
   session_id TEXT PRIMARY KEY,
   user_id    UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -54,45 +54,44 @@ CREATE TABLE sessions (
 
 ---
 
-## Import dans N8N
+## Import into n8n
 
-Pour chaque workflow (A, B, C) :
-1. N8N → **+** (nouveau workflow) → **Import from file**
-2. Sélectionne le fichier JSON correspondant
+For each workflow (A, B, C):
+1. n8n → **+** (new workflow) → **Import from file**
+2. Select the matching JSON file
 
 ---
 
-## Credentials à configurer (cherche "YOUR_" dans chaque JSON)
+## Credentials to configure (search for "YOUR_" in each JSON)
 
-Remplace tous les placeholders dans chaque nœud concerné :
+Replace every placeholder in the relevant nodes:
 
-| Placeholder | Où le trouver |
+| Placeholder | Where to find it |
 |---|---|
-| `YOUR_SUPABASE_CREDENTIAL_ID` | N8N > Credentials > Supabase (Service Role Key) |
+| `YOUR_SUPABASE_CREDENTIAL_ID` | n8n > Credentials > Supabase (Service Role Key) |
 | `YOUR_OPENROUTER_CREDENTIAL_ID` | openrouter.ai > Keys |
-| `YOUR_GMAIL_CREDENTIAL_ID` | N8N > Credentials > Gmail OAuth2 |
-| `YOUR_NEWSAPI_KEY` | newsapi.org (gratuit) |
-| `YOUR_GUARDIAN_API_KEY` | open-platform.theguardian.com (gratuit) |
-| `YOUR_N8N_BASE_URL` | L'URL de ton N8N local ou hébergé |
-| `YOUR_CHATBOT_URL` | L'URL du Chat Trigger du Workflow A |
-| `CHANGE_ME_SECRET_SALT` | Remplace par une chaîne secrète de ton choix (garde-la identique dans workflow B et C) |
+| `YOUR_GMAIL_CREDENTIAL_ID` | n8n > Credentials > Gmail OAuth2 |
+| `YOUR_NEWSAPI_KEY` | newsapi.org (free) |
+| `YOUR_GUARDIAN_API_KEY` | open-platform.theguardian.com (free) |
+| `YOUR_N8N_BASE_URL` | Your local or hosted n8n URL |
+| `YOUR_CHATBOT_URL` | The Workflow A Chat Trigger URL |
+| `CHANGE_ME_SECRET_SALT` | Replace with a secret string of your choice (keep it identical in workflows B and C) |
 
 ---
 
-## Ordre d'activation
+## Activation order
 
-1. **Workflow C** (Désinscription) → activer en premier pour avoir l'URL du webhook
-2. **Workflow A** (Chatbot) → activer, copier l'URL du Chat Trigger
-3. **Workflow B** (Newsletter) → activer en dernier
+1. **Workflow C** (Unsubscribe) → activate first to get the webhook URL
+2. **Workflow A** (Chatbot) → activate, copy the Chat Trigger URL
+3. **Workflow B** (Newsletter) → activate last
 
 ---
 
-## Test rapide
+## Quick test
 
-1. Ouvre l'URL du Chat Trigger du Workflow A
-2. Écris "Bonjour" → l'agent doit proposer inscription ou connexion
-3. Inscris-toi avec un username, email, mot de passe
-4. Reconnecte-toi dans une nouvelle conversation
-5. Configure tes préférences (topics, horaire)
-6. Pour tester l'envoi sans attendre l'heure : exécute le Workflow B manuellement
-
+1. Open the Workflow A Chat Trigger URL
+2. Type "Hello" → the agent should offer sign-up or login
+3. Sign up with a username, email and password
+4. Log in again in a new conversation
+5. Set your preferences (topics, schedule)
+6. To test delivery without waiting for the scheduled time, run Workflow B manually

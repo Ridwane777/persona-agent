@@ -1,35 +1,35 @@
-# Rapport d'Audit de Sécurité — Persona
+# Security Audit Report — Persona
 
-## 1. Résumé Exécutif
-L'architecture de Persona a été conçue avec une approche "Security by Design". Bien que le projet ne dispose pas d'interface graphique traditionnelle, l'interaction via chatbot et webhooks a été sécurisée pour prévenir les vecteurs d'attaque courants.
+## 1. Executive summary
+Persona was designed with a "security by design" approach. Although the project has no traditional GUI, the chatbot and webhook interactions are secured against common attack vectors.
 
-## 2. Authentification et Gestion des Sessions
-- **Stockage des secrets** : Les mots de passe sont hashés en **SHA-256** côté workflow avant insertion dans Supabase. Aucune donnée en clair n'est stockée.
-- **Cycle de vie des sessions** :
-  - Chaque session est liée à un `session_id` unique.
-  - Une vérification systématique de l'expiration (`expires_at`) est effectuée à chaque interaction.
-  - Délai d'expiration automatique : 24 heures.
-- **Protection contre le brute force** : L'utilisation d'outils LLM pour l'auth permet une flexibilité mais nécessite des garde-fous. L'Agent Auth est strictement limité par son system prompt à ne gérer que l'inscription/connexion.
+## 2. Authentication and session management
+- **Secret storage (known limitation)**: the password is extracted by the LLM agent (`$fromAI('password')`) and written as-is to the `password_hash` column; no hashing node runs before the insert, and the password transits through the LLM provider. **Fix**: hash it with n8n's Crypto node (or bcrypt in a Code node) before the Supabase `register`/`Find_user` tools, and collect credentials outside the LLM conversation.
+- **Session lifecycle**:
+  - Each session is tied to a unique `session_id`.
+  - Expiry (`expires_at`) is checked on every interaction.
+  - Automatic expiry: 24 hours.
+- **Brute-force protection**: using LLM tools for auth adds flexibility but needs guardrails. The Auth agent is strictly limited by its system prompt to sign-up/login only.
 
-## 3. Isolation des Données (Multi-ténacité)
-- **Filtrage par ID** : Tous les nœuds Supabase utilisent des filtres stricts sur l'UUID de l'utilisateur (`user_id = {{ $json.user_id }}`). 
-- **Séparation des flux** : Le Workflow B (Newsletter) boucle sur les utilisateurs et isole totalement le contexte de génération de chaque newsletter dans des exécutions séparées. Il est techniquement impossible qu'un utilisateur reçoive les news ou le custom prompt d'un autre.
+## 3. Data isolation (multi-tenancy)
+- **ID filtering**: all Supabase nodes use strict filters on the user's UUID (`user_id = {{ $json.user_id }}`).
+- **Flow separation**: Workflow B (Newsletter) loops over users and fully isolates each newsletter's generation context in separate executions. A user cannot receive another user's news or custom prompt.
 
-## 4. Sécurité des Webhooks (Désinscription & Feedback)
-- **Tokenisation** : Les liens de désinscription et de feedback `GET /unsubscribe?uid=...&token=...` et `GET /feedback?uid=...&token=...` sont protégés par un token hashé.
-- **Algorithme** : Le token est généré par un **hash bit-shift JS** (faute de module `crypto` disponible par défaut dans les nœuds Code N8N) combiné avec un sel statique secret. Suffisant pour un usage académique ; remplacer par HMAC-SHA256 en production.
-- **Entropie** : Le token combine l'ID utilisateur avec un sel statique secret stocké dans le code du workflow.
-- **Validation** : Le Workflow C valide l'existence de l'utilisateur ET la validité du token avant toute action destructrice.
-- **Anti-doublons feedback** : Les clics sur les boutons de feedback font un **UPDATE** sur la ligne `newsletter_logs` existante (filtrée par `newsletter_id`), évitant la création de doublons en base.
+## 4. Webhook security (unsubscribe & feedback)
+- **Tokenization**: the unsubscribe and feedback links `GET /unsubscribe?uid=...&token=...` and `GET /feedback?uid=...&token=...` are protected by a hashed token.
+- **Algorithm**: the token is generated with a **JS bit-shift hash** (the `crypto` module is not available by default in n8n Code nodes) combined with a secret static salt. Acceptable for a demo; replace with HMAC-SHA256 in production.
+- **Entropy**: the token combines the user ID with a secret static salt stored in the workflow code.
+- **Validation**: Workflow C checks that the user exists AND that the token is valid before any destructive action.
+- **Feedback deduplication**: feedback button clicks run an **UPDATE** on the existing `newsletter_logs` row (filtered by `newsletter_id`), so no duplicate rows are created.
 
-## 5. Protection contre les Injections
-- **Prompt Injection** : Les entrées utilisateur (`custom_prompt`) sont traitées comme de la donnée brute et injectées dans un bloc de texte clairement délimité pour le LLM. L'utilisation de templates et de JSON pour les échanges IA réduit le risque de détournement de l'agent.
-- **SQL Injection** : Les nœuds Supabase utilisent l'API PostgREST qui paramètre automatiquement les requêtes, éliminant les risques d'injection SQL directe.
+## 5. Injection protection
+- **Prompt injection**: user input (`custom_prompt`) is treated as raw data and placed in a clearly delimited text block for the LLM. Using templates and JSON for LLM exchanges reduces the risk of hijacking the agent.
+- **SQL injection**: Supabase nodes use the PostgREST API, which parameterizes queries automatically, removing direct SQL injection risks.
 
-## 6. Recommandations
-1. **Rotation des clés** : Changer régulièrement le `PERSONA_SALT` utilisé pour les tokens de désinscription.
-2. **Rate Limiting** : Implémenter un rate-limiting au niveau du Webhook N8N pour éviter les attaques par déni de service.
-3. **Mise à jour HMAC** : (Recommandé) Remplacer le hash bit-shift actuel par un vrai HMAC-SHA256 via le nœud "Crypto" natif de N8N si disponible dans l'environnement de déploiement cible.
+## 6. Recommendations
+1. **Key rotation**: rotate the `PERSONA_SALT` used for unsubscribe tokens regularly.
+2. **Rate limiting**: add rate limiting on the n8n webhooks to prevent denial-of-service attacks.
+3. **HMAC upgrade** (recommended): replace the current bit-shift hash with a real HMAC-SHA256 via n8n's native "Crypto" node, if available in the target deployment.
 
 ---
-*Audit réalisé le 1er Juin 2024 — Mis à jour le 4 Juin 2026*
+*Audit performed June 1, 2024 — updated June 4, 2026*

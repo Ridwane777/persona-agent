@@ -1,58 +1,66 @@
 # 📰 Persona — AI-Powered Personalized Newsletter
 
-> Un agrégateur de news personnalisé piloté par l'IA, sans interface graphique. L'utilisateur interagit via un chatbot, configure ses préférences, et reçoit automatiquement une newsletter HTML à l'heure de son choix.
+> An AI-driven personalized news aggregator with no graphical interface. Users talk to a chatbot, set their preferences, and automatically receive an HTML newsletter at the time they choose.
+
+---
+
+## 📸 Screenshots
+
+| Newsletter email | Supabase schema |
+|---|---|
+| ![Newsletter email](assets/newsletter-email.png) | ![Database schema](assets/db-schema.png) |
 
 ---
 
 ## 🏗️ Architecture
 
-Le projet est composé de **4 workflows N8N**, d'une base de données **Supabase** et d'une **API REST exposée** via Render :
+The project consists of **4 n8n workflows**, a **Supabase** database and a **REST API** exposed via Render:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  Workflow A — Chatbot (Onboarding & Préférences)                │
-│  Trigger: Chat Trigger (interface web intégrée N8N)            │
-│  → Inscription / Connexion sécurisée                           │
-│  → Configuration des préférences (topics, horaire, langue...)  │
-│  → Authentification par session avec expiration                │
+│  Workflow A — Chatbot (Onboarding & Preferences)                │
+│  Trigger: Chat Trigger (built-in n8n web interface)            │
+│  → Secure sign-up / login                                      │
+│  → Preference setup (topics, schedule, language...)            │
+│  → Session authentication with expiry                          │
 └─────────────────────────────────────────────────────────────────┘
 ┌─────────────────────────────────────────────────────────────────┐
-│  Workflow A (API) — Chatbot en mode API REST                    │
+│  Workflow A (API) — Chatbot as a REST API                       │
 │  Trigger: Webhook POST /webhook/api-chat                       │
-│  → Même logique que Workflow A                                 │
-│  → Répond en JSON { "reply": "..." } via Respond to Webhook    │
-│  → Compatible avec n'importe quel client HTTP (site, app...)   │
+│  → Same logic as Workflow A                                    │
+│  → Replies with JSON { "reply": "..." } via Respond to Webhook │
+│  → Works with any HTTP client (website, app...)                │
 └─────────────────────────────────────────────────────────────────┘
                           │
                    [Supabase DB]
                           │
 ┌─────────────────────────────────────────────────────────────────┐
-│  Workflow B — Newsletter (Génération & Envoi)                   │
+│  Workflow B — Newsletter (Generation & Delivery)                │
 │  Trigger: Webhook POST /webhook/trigger-newsletter             │
-│         déclenché par cron-job.org toutes les minutes          │
-│  → Récupération des utilisateurs actifs                        │
-│  → Vérification de l'horaire (minute-précis) par timezone      │
-│  → Agrégation news: NewsAPI + The Guardian + RSS BBC           │
-│  → Filtrage & résumé par LLM (OpenRouter)                      │
-│  → Email HTML personnalisé envoyé via Gmail                    │
-│  → Log en base de données                                      │
+│         called by cron-job.org every minute                    │
+│  → Fetch active users                                          │
+│  → Check schedule (minute precision) per timezone              │
+│  → Aggregate news: NewsAPI + The Guardian + BBC RSS            │
+│  → Filter & summarize with an LLM (OpenRouter)                 │
+│  → Personalized HTML email sent via Gmail                      │
+│  → Log to the database                                         │
 └─────────────────────────────────────────────────────────────────┘
                           │
 ┌─────────────────────────────────────────────────────────────────┐
-│  Workflow C — Désinscription (RGPD)                            │
+│  Workflow C — Unsubscribe (GDPR)                               │
 │  Trigger: Webhook GET /unsubscribe                             │
-│  → Vérification du token sécurisé                              │
-│  → Anonymisation email + désactivation compte                  │
-│  → Suppression préférences & sessions                          │
-│  → Page de confirmation HTML                                   │
+│  → Verify the secure token                                     │
+│  → Anonymize email + deactivate account                        │
+│  → Delete preferences & sessions                               │
+│  → HTML confirmation page                                      │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 🌐 Déploiement Cloud (Production)
+### 🌐 Cloud deployment (production)
 
-> Le projet est déployé sur **Render** (Web Service, Frankfurt). n8n tourne en continu et les workflows sont actifs en permanence.
+> The project is deployed on **Render** (Web Service, Frankfurt). n8n runs continuously and the workflows are always active.
 
-| Variable d'environnement | Valeur |
+| Environment variable | Value |
 |---|---|
 | `N8N_PORT` | `10000` |
 | `WEBHOOK_URL` | `https://your-n8n-instance.example.com` |
@@ -62,23 +70,23 @@ Le projet est composé de **4 workflows N8N**, d'une base de données **Supabase
 
 ---
 
-## 🚀 Prérequis
+## 🚀 Prerequisites
 
-- [N8N](https://n8n.io/) installé localement (`npx n8n` ou Docker)
-- Un compte [Supabase](https://supabase.com/) (gratuit)
-- Un compte [OpenRouter](https://openrouter.ai/) pour le LLM (gratuit avec quota)
-- Un compte [NewsAPI](https://newsapi.org/) (gratuit)
-- Un compte [The Guardian API](https://open-platform.theguardian.com/) (gratuit)
-- Un compte Gmail avec OAuth2 configuré dans N8N
+- [n8n](https://n8n.io/) installed locally (`npx n8n` or Docker)
+- A [Supabase](https://supabase.com/) account (free)
+- An [OpenRouter](https://openrouter.ai/) account for the LLM (free with quota)
+- A [NewsAPI](https://newsapi.org/) account (free)
+- A [The Guardian API](https://open-platform.theguardian.com/) account (free)
+- A Gmail account with OAuth2 configured in n8n
 
 ---
 
-## 🗄️ Base de données Supabase
+## 🗄️ Supabase database
 
-Créez les 4 tables suivantes dans l'**SQL Editor** de Supabase :
+Create the following 4 tables in the Supabase **SQL Editor**:
 
 ```sql
--- Utilisateurs
+-- Users
 CREATE TABLE users (
   id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   username          TEXT UNIQUE NOT NULL,
@@ -90,7 +98,7 @@ CREATE TABLE users (
   gdpr_consent_date TIMESTAMP
 );
 
--- Préférences newsletter
+-- Newsletter preferences
 CREATE TABLE preferences (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id       UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -102,7 +110,7 @@ CREATE TABLE preferences (
   num_articles  INT DEFAULT 5
 );
 
--- Logs d'envoi
+-- Delivery logs
 CREATE TABLE newsletter_logs (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id         UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -116,7 +124,7 @@ CREATE TABLE newsletter_logs (
   updated_at      TIMESTAMP DEFAULT now()
 );
 
--- Sessions chatbot
+-- Chatbot sessions
 CREATE TABLE sessions (
   session_id TEXT PRIMARY KEY,
   user_id    UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -127,223 +135,222 @@ CREATE TABLE sessions (
 
 ---
 
-## ⚙️ Installation et configuration
+## ⚙️ Installation and configuration
 
-### 1. Cloner le projet
+### 1. Clone the project
 
 ```bash
-git clone <url-du-repo>
+git clone <repo-url>
 cd persona-agent
 ```
 
-### 2. Configurer les credentials dans N8N
+### 2. Configure credentials in n8n
 
-Avant d'importer les workflows, créez les credentials suivants dans **N8N > Settings > Credentials** :
+Before importing the workflows, create the following credentials in **n8n > Settings > Credentials**:
 
-| Credential | Type | Où l'obtenir |
+| Credential | Type | Where to get it |
 |---|---|---|
 | `Supabase account` | Supabase API | Supabase > Project Settings > API > `service_role` key |
 | `OpenRouter API` | HTTP Header Auth | [openrouter.ai/keys](https://openrouter.ai/keys) |
 | `Gmail account` | Gmail OAuth2 | Google Cloud Console > OAuth 2.0 |
 
-### 3. Importer les workflows
+### 3. Import the workflows
 
-Dans N8N, pour **chaque fichier JSON** :
-1. Cliquez sur **+** (nouveau workflow)
-2. Cliquez sur les **3 points** en haut à droite > **Import from file**
-3. Sélectionnez le fichier correspondant
+In n8n, for **each JSON file**:
+1. Click **+** (new workflow)
+2. Click the **3 dots** in the top right > **Import from file**
+3. Select the matching file
 
-**Ordre d'import recommandé :**
-1. `Persona_workflow_C.json` — Désinscription
+**Recommended import order:**
+1. `Persona_workflow_C.json` — Unsubscribe
 2. `Persona_workflow_A.json` — Chatbot
 3. `Persona_workflow_B.json` — Newsletter
 
-### 4. Configurer les clés API dans les nœuds
+### 4. Set the API keys in the nodes
 
-Dans le **Workflow B**, mettez à jour les nœuds suivants avec vos clés :
+In **Workflow B**, update these nodes with your keys:
 
-| Nœud | Paramètre | Valeur |
+| Node | Parameter | Value |
 |---|---|---|
-| `NewsAPI` | `apiKey` | Votre clé NewsAPI |
-| `The Guardian API` | `api-key` | Votre clé Guardian (ou `test`) |
+| `NewsAPI` | `apiKey` | Your NewsAPI key |
+| `The Guardian API` | `api-key` | Your Guardian key (or `test`) |
 
-Dans le **Workflow B — nœud "Construire email HTML"**, mettez à jour les liens :
+In **Workflow B — node "Construire email HTML"**, update the links:
 
 ```javascript
-// Lien de désinscription (URL du Webhook C en production)
+// Unsubscribe link (Webhook C URL in production)
 http://localhost:5678/webhook/unsubscribe
 
-// Lien de modification des préférences (URL du Chat Trigger A)
+// Edit-preferences link (Chat Trigger A URL)
 http://localhost:5678/webhook/persona-chatbot-webhook-001/chat
 
-// Liens de feedback email vers le Webhook feedback
+// Email feedback links to the feedback webhook
 http://localhost:5678/webhook/feedback?uid={{ userId }}&token={{ token }}&newsletter_id={{ newsletterId }}&rating=good
 http://localhost:5678/webhook/feedback?uid={{ userId }}&token={{ token }}&newsletter_id={{ newsletterId }}&rating=bad
 ```
 
-### 5. Activer les workflows
+### 5. Activate the workflows
 
-**Dans cet ordre impératif :**
+**In this exact order:**
 
-1. **Workflow C** → Cliquer sur **Publish** (pour activer l'URL de désinscription)
-2. **Workflow A** → Activer "Make Chat Publicly Available" puis **Publish**
-3. **Workflow B** → **Publish** (il se déclenchera automatiquement toutes les heures)
-
----
-
-## 🧪 Tester le projet
-
-### Test complet de bout en bout
-
-**Étape 1 — Inscription via le chatbot**
-1. Ouvrez `http://localhost:5678/webhook/persona-chatbot-webhook-001/chat`
-2. Dites "Bonjour" → l'agent propose inscription ou connexion
-3. Inscrivez-vous avec un `username`, un `email` et un `mot de passe`
-4. Configurez vos préférences :
-   - Topics : ex. `technologie, sport`
-   - Horaire : ex. `20:00`
-   - Timezone : ex. `Africa/Abidjan`
-   - Langue : `fr` ou `en`
-   - Nombre d'articles : ex. `3`
-
-**Étape 2 — Envoi de la newsletter**
-
-Pour tester sans attendre l'heure programmée :
-1. Allez dans le **Workflow B**
-2. Vérifiez que votre `schedule_time` dans Supabase correspond à l'heure actuelle (ou modifiez-la temporairement)
-3. Cliquez sur **Execute Workflow**
-4. Vérifiez votre boîte email !
-
-**Étape 3 — Test de désinscription**
-1. Ouvrez l'email reçu
-2. Cliquez sur **"Se désinscrire"** en bas de l'email
-3. Une page "✅ Désinscription confirmée" doit s'afficher
-4. Vérifiez dans Supabase :
-   - `users` → email anonymisé (`deleted_...`), `is_active = false`
-   - `preferences` → ligne supprimée
-   - `sessions` → sessions supprimées
+1. **Workflow C** → click **Publish** (activates the unsubscribe URL)
+2. **Workflow A** → enable "Make Chat Publicly Available", then **Publish**
+3. **Workflow B** → **Publish** (it is triggered automatically by the external cron)
 
 ---
 
-## 📁 Structure du projet
+## 🧪 Testing
+
+### End-to-end test
+
+**Step 1 — Sign up via the chatbot**
+1. Open `http://localhost:5678/webhook/persona-chatbot-webhook-001/chat`
+2. Say "Hello" → the agent offers sign-up or login
+3. Sign up with a `username`, an `email` and a `password`
+4. Set your preferences:
+   - Topics: e.g. `technology, sport`
+   - Schedule: e.g. `20:00`
+   - Timezone: e.g. `Africa/Abidjan`
+   - Language: `fr` or `en`
+   - Number of articles: e.g. `3`
+
+**Step 2 — Send the newsletter**
+
+To test without waiting for the scheduled time:
+1. Open **Workflow B**
+2. Make sure your `schedule_time` in Supabase matches the current time (or change it temporarily)
+3. Click **Execute Workflow**
+4. Check your inbox
+
+**Step 3 — Test unsubscribe**
+1. Open the received email
+2. Click the **unsubscribe** link at the bottom
+3. An unsubscribe confirmation page should appear
+4. Check in Supabase:
+   - `users` → anonymized email (`deleted_...`), `is_active = false`
+   - `preferences` → row deleted
+   - `sessions` → sessions deleted
+
+---
+
+## 📁 Project structure
 
 ```
 .
-├── Persona_workflow_A.json       # Workflow Chatbot (Onboarding & Auth — interface N8N)
-├── Persona_workflow_A_API.json   # Workflow Chatbot en mode API REST (Webhook POST)
-├── Persona_workflow_B.json       # Workflow Newsletter (Génération & Envoi)
-├── Persona_workflow_C.json       # Workflow Désinscription (RGPD)
-├── demo_chat.html                # Page de démonstration HTML — appelle l'API chatbot
-├── SETUP.md                      # Guide de mise en service rapide
-├── README.md                     # Ce fichier
-├── SECURITY.md                   # Rapport d'audit de sécurité
-├── GDPR.md                       # Note de conformité RGPD
-├── Tasks.md                      # Suivi des exigences MUSTs/COULDs
-├── session_handover.md           # Handover technique inter-sessions
-└── .env                          # Variables d'environnement (ne pas committer !)
+├── Persona_workflow_A.json       # Chatbot workflow (onboarding & auth — n8n chat UI)
+├── Persona_workflow_A_API.json   # Chatbot workflow as a REST API (webhook POST)
+├── Persona_workflow_B.json       # Newsletter workflow (generation & delivery)
+├── Persona_workflow_C.json       # Unsubscribe workflow (GDPR)
+├── demo_chat.html                # HTML demo page — calls the chatbot API
+├── assets/                       # Screenshots
+├── SETUP.md                      # Quick setup guide
+├── README.md                     # This file
+├── SECURITY.md                   # Security audit report
+├── GDPR.md                       # GDPR compliance note
+├── Tasks.md                      # Requirements tracking
+├── persona-n8n-guide.md          # Detailed n8n build guide
+└── .env                          # Environment variables (do not commit!)
 ```
 
 ---
 
-## 🔒 Sécurité & RGPD
+## 🔒 Security & GDPR
 
-### Authentification
-- Les mots de passe sont **hashés** via SHA-256 avant stockage en base de données.
-- Les sessions ont une **durée d'expiration** configurée (24h par défaut).
-- Chaque session est identifiée par un `session_id` unique généré par N8N.
-- Le chatbot refuse toute action si la session est invalide ou expirée.
+### Authentication
+- ⚠️ Known limitation: passwords are currently stored as provided (no hashing node runs before the insert) and transit through the LLM. Planned fix: hash with n8n's Crypto node / bcrypt and collect credentials outside the chat — see `SECURITY.md`.
+- Sessions have an **expiry time** (24h by default).
+- Each session is identified by a unique `session_id` generated by n8n.
+- The chatbot refuses any action if the session is invalid or expired.
 
-### Liens de désinscription & feedback
-- Chaque lien contient un `uid` et un `token` de sécurité calculé par un **hash bit-shift JS** avec un sel secret (`CHANGE_ME_SECRET_SALT`). Note : le module `crypto` (HMAC) n'étant pas disponible par défaut dans les nœuds Code de N8N, cette implémentation est suffisante pour un usage académique.
-- Le **Workflow C** revalide le token avant toute suppression de données ou enregistrement de feedback.
-- Un lien invalide affiche une page d'erreur sans effectuer aucune action.
-- Les clics sur **"J'ai aimé" / "Je n'ai pas aimé"** dans l'email font un **UPDATE** sur la ligne existante dans `newsletter_logs` (filtrée par `newsletter_id`), évitant ainsi les doublons.
+### Unsubscribe & feedback links
+- Each link contains a `uid` and a security `token` computed with a **JS bit-shift hash** and a secret salt (`CHANGE_ME_SECRET_SALT`). Note: since the `crypto` module (HMAC) is not available by default in n8n Code nodes, this implementation is acceptable for a demo project but not for production.
+- **Workflow C** revalidates the token before deleting any data or recording feedback.
+- An invalid link shows an error page and performs no action.
+- Clicking **like / dislike** in the email runs an **UPDATE** on the existing `newsletter_logs` row (filtered by `newsletter_id`), avoiding duplicates.
 
-### Conformité RGPD
-- L'utilisateur peut se désinscrire à tout moment via le lien dans chaque email.
-- La désinscription **anonymise** l'email (ne le supprime pas, pour conserver l'intégrité référentielle) et désactive le compte.
-- Les préférences et sessions sont **supprimées définitivement** lors de la désinscription.
-
----
-
-## 🧠 Fonctionnement du LLM
-
-Le **Workflow B** utilise un LLM (via OpenRouter) pour :
-1. **Filtrer** les articles parmi les sources selon les topics de l'utilisateur
-2. **Résumer** chaque article sélectionné en 2-3 phrases dans la langue de l'utilisateur
-3. **Retourner** un JSON structuré avec exactement `num_articles` articles
-
-Le prompt envoyé à l'IA est enrichi dynamiquement avec :
-- **`custom_prompt`** : instructions de style définies par l'utilisateur via le chatbot (ex : _"Adopte un ton humoristique"_, _"Utilise des bullet points"_). Stocké dans `preferences.custom_prompt`.
-- **Feedbacks passés** : les avis laissés sur les newsletters précédentes (via le chatbot ou les boutons dans l'email) sont récupérés depuis `newsletter_logs` et injectés dans le prompt pour affiner la sélection du lendemain. Ce mécanisme s'exécute de manière **séquentielle** avant les appels API pour garantir la disponibilité des données.
-- **`factCheckScore`** : chaque article reçoit un score de confirmation croisée entre sources. L'IA est instruite de prioriser les articles avec un score élevé.
-
-Le modèle par défaut est configurable dans le nœud **"LLM Newsletter"**. Le projet utilise un modèle gratuit via OpenRouter, mais peut être facilement switché vers GPT-4, Claude, Mistral, etc.
+### GDPR compliance
+- Users can unsubscribe at any time via the link in every email.
+- Unsubscribing **anonymizes** the email (not deleted, to keep referential integrity) and deactivates the account.
+- Preferences and sessions are **permanently deleted** on unsubscribe.
 
 ---
 
-## 📡 Sources d'actualités
+## 🧠 How the LLM is used
 
-| Source | Type | Langue |
+**Workflow B** uses an LLM (via OpenRouter) to:
+1. **Filter** articles from the sources according to the user's topics
+2. **Summarize** each selected article in 2-3 sentences in the user's language
+3. **Return** structured JSON with exactly `num_articles` articles
+
+The prompt is enriched dynamically with:
+- **`custom_prompt`**: style instructions set by the user via the chatbot (e.g. _"Use a humorous tone"_, _"Use bullet points"_). Stored in `preferences.custom_prompt`.
+- **Past feedback**: ratings left on previous newsletters (via the chatbot or the email buttons) are read from `newsletter_logs` and injected into the prompt to refine the next selection. This step runs **sequentially** before the API calls so the data is available.
+- **`factCheckScore`**: each article gets a cross-source confirmation score. The LLM is instructed to prioritize high-scoring articles.
+
+The default model is configurable in the **"LLM Newsletter"** node. The project uses a free OpenRouter model, but can easily switch to GPT-4, Claude, Mistral, etc.
+
+---
+
+## 📡 News sources
+
+| Source | Type | Language |
 |---|---|---|
-| [NewsAPI](https://newsapi.org/) | API REST | Multi-langue |
-| [The Guardian](https://open-platform.theguardian.com/) | API REST | Anglais |
-| [RSS BBC News](https://feeds.bbci.co.uk/news/rss.xml) | Feed RSS | Anglais |
+| [NewsAPI](https://newsapi.org/) | REST API | Multi-language |
+| [The Guardian](https://open-platform.theguardian.com/) | REST API | English |
+| [BBC News RSS](https://feeds.bbci.co.uk/news/rss.xml) | RSS feed | English |
 
 ---
 
-## 🌍 Support des timezones
+## 🌍 Timezone support
 
-Le système supporte toutes les timezones standard, y compris les fuseaux africains :
+All standard timezones are supported, including African ones:
 
 ```
 Africa/Abidjan, Africa/Dakar, Africa/Casablanca,
 Africa/Lagos, Africa/Nairobi, Africa/Johannesburg...
 ```
 
-La comparaison d'horaire se fait au niveau de la **minute** (format `HH:mm`) pour une précision maximale, rendue possible par le déclenchement toutes les minutes via `cron-job.org` en production.
+Schedules are compared at **minute** level (`HH:mm` format), made possible by the every-minute trigger from `cron-job.org` in production.
 
 ---
 
-## 🛠️ Technologies utilisées
+## 🛠️ Tech stack
 
-| Outil | Usage |
+| Tool | Use |
 |---|---|
-| **N8N** | Orchestration des workflows |
-| **Supabase** | Base de données PostgreSQL + API REST |
-| **OpenRouter** | Accès unifié aux LLMs (gratuit avec quota) |
-| **NewsAPI** | Agrégation d'actualités |
-| **The Guardian API** | Source d'actualités premium |
-| **Gmail OAuth2** | Envoi des newsletters |
-| **Render** | Hébergement cloud du serveur N8N (production) |
-| **cron-job.org** | Déclenchement externe à la minute (keep-alive + trigger) |
+| **n8n** | Workflow orchestration |
+| **Supabase** | PostgreSQL database + REST API |
+| **OpenRouter** | Unified LLM access (free with quota) |
+| **NewsAPI** | News aggregation |
+| **The Guardian API** | Premium news source |
+| **Gmail OAuth2** | Newsletter delivery |
+| **Render** | Cloud hosting for the n8n server (production) |
+| **cron-job.org** | External every-minute trigger (keep-alive + trigger) |
 
 ---
 
-## 📡 Endpoints exposés (Production)
+## 📡 Exposed endpoints (production)
 
-| Endpoint | Méthode | Description |
+| Endpoint | Method | Description |
 |---|---|---|
-| `/webhook/trigger-newsletter` | POST | Déclenche la newsletter (appelé par cron-job.org) |
-| `/webhook/api-chat` | POST | API chatbot REST — utilisé par `demo_chat.html` |
-| `/webhook/unsubscribe` | GET | Désinscription RGPD via lien email |
-| `/webhook/feedback` | GET | Enregistrement du feedback (J'ai aimé / Pas aimé) |
+| `/webhook/trigger-newsletter` | POST | Triggers the newsletter (called by cron-job.org) |
+| `/webhook/api-chat` | POST | REST chatbot API — used by `demo_chat.html` |
+| `/webhook/unsubscribe` | GET | GDPR unsubscribe via email link |
+| `/webhook/feedback` | GET | Records feedback (liked / disliked) |
 
-### Utilisation de l'API chatbot
+### Using the chatbot API
 
 ```bash
 curl -X POST https://your-n8n-instance.example.com/webhook/api-chat \
   -H "Content-Type: application/json" \
-  -d '{"sessionId": "mon-session-id", "message": "Bonjour !"}'
+  -d '{"sessionId": "my-session-id", "message": "Hello!"}'
 
-# Réponse :
-# { "reply": "Bonjour ! Je suis l'assistant Persona..." }
+# Response:
+# { "reply": "Hello! I'm the Persona assistant..." }
 ```
 
-Une démonstration visuelle est disponible dans le fichier **`demo_chat.html`** (ouvrir dans un navigateur).
+A visual demo is available in **`demo_chat.html`** (open it in a browser).
 
 ---
 
-## 👥 Équipe
-
-Projet réalisé dans le cadre du cursus **Ridwane777 PGE2 — G-AIA-410**.
+Author: [Ridwane777](https://github.com/Ridwane777)

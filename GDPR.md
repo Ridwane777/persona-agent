@@ -1,39 +1,39 @@
-# Note de Conformité RGPD — Projet Persona
+# GDPR Compliance Note — Persona
 
 ## 1. Introduction
-Le projet **Persona** est un service d'agrégation d'actualités par IA. Dans le cadre de son fonctionnement, il traite des données à caractère personnel (DCP) appartenant à ses utilisateurs. Cette note détaille les mesures techniques et organisationnelles mises en place pour assurer la conformité au Règlement Général sur la Protection des Données (RGPD).
+**Persona** is an AI news aggregation service. To operate, it processes personal data belonging to its users. This note describes the technical and organizational measures in place to comply with the General Data Protection Regulation (GDPR).
 
-## 2. Données collectées
-Le système collecte et stocke les données suivantes :
-- **Username** : Pour l'identification.
-- **Email** : Nécessaire pour l'envoi de la newsletter.
-- **Mot de passe** : Stocké exclusivement sous forme de hash (SHA-256).
-- **Centres d'intérêt (Topics)** : Pour la personnalisation.
-- **Horaires et zone géographique** : Pour la planification des envois.
-- **Feedback** : Commentaires facultatifs sur les newsletters reçues (via le chatbot ou les boutons "J'ai aimé" / "Je n'ai pas aimé" dans l'email). Ces feedbacks sont utilisés uniquement pour améliorer les prochains envois de l'utilisateur concerné.
-- **Prompt personnalisé (custom_prompt)** : Instructions de style optionnelles définies par l'utilisateur pour adapter le ton de sa newsletter.
+## 2. Data collected
+The system collects and stores:
+- **Username**: for identification.
+- **Email**: required to send the newsletter.
+- **Password**: stored only as a hash (SHA-256).
+- **Interests (topics)**: for personalization.
+- **Schedule and timezone**: to plan deliveries.
+- **Feedback**: optional comments on received newsletters (via the chatbot or the like / dislike buttons in the email). Feedback is used only to improve that user's next newsletters.
+- **Custom prompt (`custom_prompt`)**: optional style instructions set by the user to adjust the newsletter's tone.
 
-## 3. Base légale du traitement
-Le traitement repose sur le **consentement explicite** de l'utilisateur (Article 6.1.a du RGPD). Ce consentement est recueilli lors de l'onboarding via le chatbot et enregistré en base de données (`gdpr_consent` = true) avec horodatage (`gdpr_consent_date`).
+## 3. Legal basis
+Processing is based on the user's **explicit consent** (GDPR Article 6.1.a). Consent is collected during chatbot onboarding and stored in the database (`gdpr_consent` = true) with a timestamp (`gdpr_consent_date`).
 
-## 4. Durée de conservation
-Les données sont conservées tant que l'utilisateur est actif. 
-- En cas de désinscription, les données de préférences et les sessions sont **immédiatement supprimées**.
-- L'adresse email est **anonymisée** (ex: `deleted_123@persona.local`) afin de conserver l'intégrité des logs d'envoi tout en supprimant le lien avec une personne physique identifiée.
+## 4. Retention
+Data is kept while the user is active.
+- On unsubscribe, preferences and sessions are **deleted immediately**.
+- The email address is **anonymized** (e.g. `deleted_123@persona.local`) to keep delivery logs consistent while removing the link to an identifiable person.
 
-## 5. Droits des utilisateurs
-Les utilisateurs peuvent exercer leurs droits directement via le chatbot ou les liens dans les emails :
-- **Droit à l'oubli / Effacement** : Accessible via le lien "Se désinscrire" présent dans chaque newsletter ou via la commande "Désinscription" dans le chatbot.
-- **Droit d'accès et de rectification** : L'utilisateur peut consulter et modifier ses préférences à tout moment via le chatbot.
-- **Droit à la portabilité** : Sur demande, les données stockées peuvent être extraites via les outils d'administration Supabase.
+## 5. User rights
+Users can exercise their rights directly via the chatbot or the email links:
+- **Right to erasure**: via the unsubscribe link in every newsletter, or by asking the chatbot to unsubscribe.
+- **Right of access and rectification**: users can view and edit their preferences at any time via the chatbot.
+- **Right to portability**: on request, stored data can be exported with the Supabase admin tools.
 
-## 6. Sécurité des données
-- **Hachage** : Les mots de passe ne sont jamais stockés en clair.
-- **Isolation** : Chaque requête à la base de données est filtrée par l'ID de l'utilisateur de la session active, garantissant qu'un utilisateur ne peut pas accéder aux données d'un autre.
-- **Tokens sécurisés** : Les liens de désinscription utilisent un token unique généré par un sel secret (`PERSONA_SALT`), empêchant toute tentative de désinscription malveillante par tiers.
+## 6. Data security
+- **Hashing**: passwords are never stored in plain text.
+- **Isolation**: every database query is filtered by the user ID of the active session, so a user cannot access another user's data.
+- **Secure tokens**: unsubscribe links use a unique token generated with a secret salt (`PERSONA_SALT`), preventing malicious unsubscribes by third parties.
 
-## 7. Transfert de données
-Les données sont stockées sur **Supabase** (infrastructure AWS/GCP selon configuration). Les résumés de news sont générés via **OpenRouter** (OpenAI/Anthropic). Aucune donnée personnelle (PII) autre que le prénom/username n'est transmise aux LLM lors du résumé des news (seuls les articles et les topics sont envoyés).
+## 7. Data transfers
+Data is stored on **Supabase** (AWS/GCP infrastructure depending on configuration). News summaries are generated via **OpenRouter** (OpenAI/Anthropic). No personal data other than the username is sent to the LLM when summarizing news (only articles and topics are sent).
 
 ---
-*Date de dernière mise à jour : 4 Juin 2026*
+*Last updated: June 4, 2026*

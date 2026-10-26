@@ -1,105 +1,105 @@
-# Guide Complet — Projet Persona sur N8N
-> Agrégateur de newsletters IA personnalisées | Première utilisation de N8N
+# Complete Guide — Persona on n8n
+> Personalized AI newsletter aggregator | First-time n8n usage
 
 ---
 
-## Table des matières
+## Table of contents
 
-1. [Comprendre N8N en 5 minutes](#1-comprendre-n8n-en-5-minutes)
-2. [Architecture globale du projet](#2-architecture-globale-du-projet)
-3. [Supabase — structure de la base de données](#3-supabase--structure-de-la-base-de-données)
-4. [MUST 1 — Chatbot trigger & authentification](#4-must-1--chatbot-trigger--authentification)
-5. [MUST 2 — Onboarding utilisateur via le chatbot](#5-must-2--onboarding-utilisateur-via-le-chatbot)
-6. [MUST 3 — Récupération des news depuis plusieurs sources](#6-must-3--récupération-des-news-depuis-plusieurs-sources)
-7. [MUST 4 — Filtrage IA par utilisateur](#7-must-4--filtrage-ia-par-utilisateur)
-8. [MUST 5 — Envoi de la newsletter par email](#8-must-5--envoi-de-la-newsletter-par-email)
-9. [MUST 6 — Planification (schedule par utilisateur)](#9-must-6--planification-schedule-par-utilisateur)
-10. [MUST 7 — RGPD de base & désinscription](#10-must-7--rgpd-de-base--désinscription)
-11. [COULD 1 — Newsletter en HTML](#11-could-1--newsletter-en-html)
-12. [COULD 2 — Commentaires sur les newsletters passées](#12-could-2--commentaires-sur-les-newsletters-passées)
-13. [COULD 3 — Fact-checking](#13-could-3--fact-checking)
-14. [COULD 4 — Prompt personnalisé par utilisateur](#14-could-4--prompt-personnalisé-par-utilisateur)
-15. [Ordre de construction recommandé](#15-ordre-de-construction-recommandé)
-16. [Erreurs fréquentes des débutants N8N](#16-erreurs-fréquentes-des-débutants-n8n)
-17. [Checklist avant la démo](#17-checklist-avant-la-démo)
+1. [n8n in 5 minutes](#1-n8n-in-5-minutes)
+2. [Overall architecture](#2-overall-architecture)
+3. [Supabase — database schema](#3-supabase--database-schema)
+4. [Core 1 — Chatbot trigger & authentication](#4-core-1--chatbot-trigger--authentication)
+5. [Core 2 — User onboarding through the chatbot](#5-core-2--user-onboarding-through-the-chatbot)
+6. [Core 3 — Fetching news from multiple sources](#6-core-3--fetching-news-from-multiple-sources)
+7. [Core 4 — Per-user AI filtering](#7-core-4--per-user-ai-filtering)
+8. [Core 5 — Sending the newsletter by email](#8-core-5--sending-the-newsletter-by-email)
+9. [Core 6 — Per-user scheduling](#9-core-6--per-user-scheduling)
+10. [Core 7 — Basic GDPR & unsubscribe](#10-core-7--basic-gdpr--unsubscribe)
+11. [Extra 1 — HTML newsletter](#11-extra-1--html-newsletter)
+12. [Extra 2 — Feedback on past newsletters](#12-extra-2--feedback-on-past-newsletters)
+13. [Extra 3 — Fact-checking](#13-extra-3--fact-checking)
+14. [Extra 4 — Per-user custom prompt](#14-extra-4--per-user-custom-prompt)
+15. [Recommended build order](#15-recommended-build-order)
+16. [Common n8n beginner mistakes](#16-common-n8n-beginner-mistakes)
+17. [Pre-demo checklist](#17-pre-demo-checklist)
 
 ---
 
-## 1. Comprendre N8N en 5 minutes
+## 1. n8n in 5 minutes
 
-### Vocabulaire essentiel
+### Key vocabulary
 
-| Terme | Définition |
+| Term | Definition |
 |---|---|
-| **Workflow** | Un enchaînement de nœuds, c'est ton "programme" |
-| **Node (nœud)** | Une étape dans le workflow (ex: envoyer un email, interroger une API) |
-| **Trigger** | Le nœud qui démarre le workflow (chatbot, cron, webhook...) |
-| **Expression** | Une variable dynamique, syntaxe `{{ $json.champ }}` |
-| **Credentials** | Tes clés API stockées de façon sécurisée dans N8N |
-| **Execution** | Une instance d'exécution d'un workflow |
-| **Item** | Un objet JSON qui circule entre les nœuds |
+| **Workflow** | A chain of nodes — your "program" |
+| **Node** | One step in the workflow (e.g. send an email, call an API) |
+| **Trigger** | The node that starts the workflow (chatbot, cron, webhook...) |
+| **Expression** | A dynamic value, syntax `{{ $json.champ }}` |
+| **Credentials** | API keys stored securely in n8n |
+| **Execution** | One run of a workflow |
+| **Item** | A JSON object passed between nodes |
 
-### Comment les données circulent
+### How data flows
 
-Chaque nœud reçoit un tableau d'**items** (objets JSON) et en retourne un nouveau. Pour accéder à la sortie du nœud précédent :
+Each node receives an array of **items** (JSON objects) and returns a new one. To access the previous node's output:
 
 ```
-{{ $json.nom_du_champ }}           → valeur du champ
-{{ $json["champ avec espace"] }}   → champ avec espace/caractère spécial
-{{ $('Nom du nœud').item.json.x }} → valeur d'un nœud précis par son nom
+{{ $json.nom_du_champ }}           → field value
+{{ $json["champ avec espace"] }}   → field with a space/special character
+{{ $('Nom du nœud').item.json.x }} → value from a specific node by name
 ```
 
-### Les nœuds que tu utiliseras le plus
+### Most-used nodes
 
-- **Chat Trigger** — point d'entrée chatbot
-- **AI Agent** — cerveau IA avec mémoire de conversation
-- **HTTP Request** — appel d'API externe (news, etc.)
-- **Supabase** — lecture/écriture dans ta DB
-- **Code (JavaScript)** — logique custom
-- **IF / Switch** — branchements conditionnels
-- **Send Email / Gmail** — envoi d'emails
-- **Schedule Trigger** — déclenchement automatique à heure fixe
-- **Set** — créer/modifier des champs dans tes items
+- **Chat Trigger** — chatbot entry point
+- **AI Agent** — LLM with conversation memory
+- **HTTP Request** — external API call (news, etc.)
+- **Supabase** — read/write to the DB
+- **Code (JavaScript)** — custom logic
+- **IF / Switch** — conditional branching
+- **Send Email / Gmail** — sending emails
+- **Schedule Trigger** — runs at fixed times
+- **Set** — create/modify item fields
 
 ---
 
-## 2. Architecture globale du projet
+## 2. Overall architecture
 
-Le projet se compose de **3 workflows distincts** :
+The project consists of **3 separate workflows**:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  WORKFLOW A — Chatbot (toujours actif)                       │
+│  WORKFLOW A — Chatbot (always active)                        │
 │                                                              │
-│  Chat Trigger → AI Agent → Supabase (CRUD utilisateur)      │
-│                          → Authentification                  │
-│                          → Onboarding / Modification prefs  │
+│  Chat Trigger → AI Agent → Supabase (user CRUD)             │
+│                          → Authentication                    │
+│                          → Onboarding / preference updates  │
 └─────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────┐
-│  WORKFLOW B — Envoi de newsletters (déclenché toutes les     │
-│              heures ou toutes les X minutes)                 │
+│  WORKFLOW B — Newsletter delivery (runs every hour           │
+│              or every X minutes)                             │
 │                                                              │
-│  Schedule Trigger → Supabase (qui doit recevoir maintenant?)│
-│                   → HTTP Request (sources de news)          │
-│                   → AI Agent (filtrage + résumé)            │
+│  Schedule Trigger → Supabase (who is due now?)              │
+│                   → HTTP Request (news sources)             │
+│                   → AI Agent (filtering + summary)          │
 │                   → Send Email                              │
-│                   → Supabase (log d'envoi)                  │
+│                   → Supabase (delivery log)                 │
 └─────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────┐
-│  WORKFLOW C — Désinscription (webhook ou lien email)         │
+│  WORKFLOW C — Unsubscribe (webhook or email link)            │
 │                                                              │
-│  Webhook Trigger → Supabase (suppression/désactivation)     │
-│                  → Email de confirmation                    │
+│  Webhook Trigger → Supabase (delete/deactivate)             │
+│                  → Confirmation email                       │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 3. Supabase — structure de la base de données
+## 3. Supabase — database schema
 
-### Tables à créer
+### Tables
 
 #### Table `users`
 
@@ -107,10 +107,10 @@ Le projet se compose de **3 workflows distincts** :
 CREATE TABLE users (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   username     TEXT UNIQUE NOT NULL,
-  password_hash TEXT NOT NULL,          -- bcrypt ou sha256
+  password_hash TEXT NOT NULL,          -- bcrypt or sha256
   email        TEXT NOT NULL,
   created_at   TIMESTAMP DEFAULT now(),
-  is_active    BOOLEAN DEFAULT true,    -- pour la désinscription RGPD
+  is_active    BOOLEAN DEFAULT true,    -- for GDPR unsubscribe
   gdpr_consent BOOLEAN DEFAULT false,
   gdpr_consent_date TIMESTAMP
 );
@@ -122,10 +122,10 @@ CREATE TABLE users (
 CREATE TABLE preferences (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id       UUID REFERENCES users(id) ON DELETE CASCADE,
-  topics        TEXT[],                 -- ex: ['tech', 'climat', 'sport']
-  schedule_time TIME NOT NULL,          -- ex: '08:00:00'
+  topics        TEXT[],                 -- e.g. ['tech', 'climate', 'sport']
+  schedule_time TIME NOT NULL,          -- e.g. '08:00:00'
   schedule_tz   TEXT DEFAULT 'UTC',
-  custom_prompt TEXT,                   -- COULD 4
+  custom_prompt TEXT,                   -- Extra 4
   language      TEXT DEFAULT 'fr',
   num_articles  INT DEFAULT 5
 );
@@ -137,10 +137,10 @@ CREATE TABLE preferences (
 CREATE TABLE newsletter_logs (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id         UUID REFERENCES users(id) ON DELETE CASCADE,
-  newsletter_id   VARCHAR(255),           -- lien trackable / email feedback
+  newsletter_id   VARCHAR(255),           -- trackable link / email feedback
   sent_at         TIMESTAMP DEFAULT now(),
-  articles        JSONB,                  -- les articles envoyés
-  feedback        TEXT,                   -- commentaire libre
+  articles        JSONB,                  -- articles sent
+  feedback        TEXT,                   -- free-text comment
   feedback_source VARCHAR(50) CHECK (feedback_source IN ('chat', 'email_link')),
   rating          VARCHAR(50) CHECK (rating IN ('good', 'bad')),
   created_at      TIMESTAMP DEFAULT now(),
@@ -152,155 +152,155 @@ CREATE TABLE newsletter_logs (
 
 ```sql
 CREATE TABLE sessions (
-  session_id   TEXT PRIMARY KEY,        -- identifiant de la session chatbot
+  session_id   TEXT PRIMARY KEY,        -- chatbot session identifier
   user_id      UUID REFERENCES users(id) ON DELETE CASCADE,
   created_at   TIMESTAMP DEFAULT now(),
   expires_at   TIMESTAMP
 );
 ```
 
-### Connexion Supabase dans N8N
+### Supabase connection in n8n
 
-1. Dans N8N → **Settings > Credentials > New**
-2. Cherche "Supabase"
-3. Renseigne : URL du projet (`https://xxx.supabase.co`) + Service Role Key (dans Supabase > Settings > API)
-4. Donne un nom clair : `Supabase - Persona`
+1. In n8n → **Settings > Credentials > New**
+2. Search "Supabase"
+3. Fill in: project URL (`https://xxx.supabase.co`) + Service Role Key (Supabase > Settings > API)
+4. Give it a clear name: `Supabase - Persona`
 
-> ⚠️ Utilise la **Service Role Key** (et non l'anon key) pour bypasser les Row Level Security depuis N8N. Garde-la secrète.
+> ⚠️ Use the **Service Role Key** (not the anon key) to bypass Row Level Security from n8n. Keep it secret.
 
 ---
 
-## 4. MUST 1 — Chatbot trigger & authentification
+## 4. Core 1 — Chatbot trigger & authentication
 
-### Objectif
+### Goal
 
-Permettre à un utilisateur de s'identifier via le chatbot, et bloquer tout accès non authentifié aux données personnelles.
+Let a user identify through the chatbot, and block any unauthenticated access to personal data.
 
-### Nœuds à utiliser
+### Nodes
 
 ```
 [Chat Trigger] → [AI Agent] → [Code: extract intent] → [IF: logged in?]
-                                                              ↓ Non
-                                                         [Demander login/register]
-                                                              ↓ Oui
-                                                         [Suite du workflow]
+                                                              ↓ No
+                                                         [Ask login/register]
+                                                              ↓ Yes
+                                                         [Rest of workflow]
 ```
 
-### Étape par étape
+### Step by step
 
-**1. Ajouter le Chat Trigger**
-- Ouvre un nouveau workflow
-- Ajoute le nœud **"Chat Trigger"**
-- Il génère automatiquement une URL de chatbot accessible dans ton navigateur
-- Active l'option **"Allow file uploads"** si tu veux (optionnel)
+**1. Add the Chat Trigger**
+- Create a new workflow
+- Add the **"Chat Trigger"** node
+- It generates a chatbot URL you can open in a browser
+- Optionally enable **"Allow file uploads"**
 
-**2. Stocker l'identité de session**
+**2. Store the session identity**
 
-Le Chat Trigger fournit automatiquement un `sessionId` unique par conversation. C'est ta clé pour retrouver l'état d'un utilisateur.
+The Chat Trigger provides a unique `sessionId` per conversation. It is the key to look up a user's state.
 
 ```javascript
-// Dans un nœud Code, récupère le sessionId :
+// In a Code node, read the sessionId:
 const sessionId = $('Chat Trigger').item.json.sessionId;
 ```
 
-**3. Logique d'authentification**
+**3. Authentication logic**
 
-À chaque message reçu, avant de faire quoi que ce soit :
+On every incoming message, before anything else:
 
 ```
 [Chat Trigger]
       ↓
 [Supabase: SELECT * FROM sessions WHERE session_id = '{{sessionId}}']
       ↓
-[IF: session trouvée et non expirée?]
-    ↙ Oui                    ↘ Non
-[Utilisateur connecté]    [AI Agent: demande login]
+[IF: session found and not expired?]
+    ↙ Yes                    ↘ No
+[User logged in]          [AI Agent: ask for login]
 ```
 
-**4. Nœud d'enregistrement**
+**4. Registration node**
 
-Quand l'utilisateur veut créer un compte :
+When the user wants to create an account:
 
 ```javascript
-// Nœud Code — hachage du mot de passe (simple)
+// Code node — password hashing (simple)
 const crypto = require('crypto');
 const password = $json.password;
 const hash = crypto.createHash('sha256').update(password).digest('hex');
 return [{ json: { password_hash: hash } }];
 ```
 
-Puis un nœud **Supabase** en mode `INSERT` dans la table `users`.
+Then a **Supabase** node in `INSERT` mode on the `users` table.
 
-**5. Nœud de login**
+**5. Login node**
 
 ```javascript
-// Nœud Code — vérification
+// Code node — verification
 const inputHash = crypto.createHash('sha256').update($json.password).digest('hex');
 const storedHash = $('Supabase: get user').item.json.password_hash;
 const isValid = inputHash === storedHash;
 return [{ json: { isValid } }];
 ```
 
-Si valide → INSERT dans `sessions` avec `expires_at = now() + 24h`.
+If valid → INSERT into `sessions` with `expires_at = now() + 24h`.
 
-### Test de sécurité à faire
+### Security tests
 
-- [ ] Essayer d'accéder aux données d'un autre utilisateur en changeant manuellement l'email dans le chat
-- [ ] Vérifier qu'un session_id expiré ne donne plus accès
-- [ ] Vérifier qu'un utilisateur inconnu reçoit un message d'erreur clair
+- [ ] Try to access another user's data by manually changing the email in the chat
+- [ ] Check that an expired session_id no longer grants access
+- [ ] Check that an unknown user gets a clear error message
 
 ---
 
-## 5. MUST 2 — Onboarding utilisateur via le chatbot
+## 5. Core 2 — User onboarding through the chatbot
 
-### Objectif
+### Goal
 
-Un nouvel utilisateur doit pouvoir, en conversation naturelle, fournir ses centres d'intérêt, son email et son horaire préféré.
+A new user provides their interests, email and preferred time in natural conversation.
 
-### Nœuds à utiliser
-
-```
-[AI Agent avec mémoire] → [Code: extraire les données] → [Supabase INSERT preferences]
-```
-
-### Configuration de l'AI Agent
-
-**Modèle recommandé pour débuter :** OpenAI GPT-4o-mini (moins cher) ou Claude Haiku via l'API Anthropic.
-
-**System prompt de l'agent :**
+### Nodes
 
 ```
-Tu es l'assistant de configuration de Persona, un service de newsletter personnalisée.
+[AI Agent with memory] → [Code: extract data] → [Supabase INSERT preferences]
+```
 
-Ton rôle est de collecter ces informations auprès de l'utilisateur de façon conversationnelle :
-1. Ses centres d'intérêt (minimum 1, maximum 10 topics)
-2. Son adresse email
-3. L'heure à laquelle il souhaite recevoir sa newsletter (format HH:MM)
-4. Sa timezone (si il ne sait pas, propose UTC+1 pour la France)
+### AI Agent configuration
 
-Règles :
-- Ne demande pas tout en même temps, guide l'utilisateur étape par étape
-- Confirme chaque information avant de passer à la suivante
-- Une fois toutes les infos collectées, résume-les et demande confirmation
-- Quand l'utilisateur confirme, réponds UNIQUEMENT avec ce JSON (rien d'autre) :
+**Recommended starter model:** OpenAI GPT-4o-mini (cheaper) or Claude Haiku via the Anthropic API.
+
+**Agent system prompt:**
+
+```
+You are the setup assistant for Persona, a personalized newsletter service.
+
+Your job is to collect the following from the user conversationally:
+1. Their interests (minimum 1, maximum 10 topics)
+2. Their email address
+3. The time they want to receive the newsletter (HH:MM format)
+4. Their timezone (if unknown, suggest UTC+1 for France)
+
+Rules:
+- Do not ask for everything at once; guide the user step by step
+- Confirm each item before moving to the next
+- Once everything is collected, summarize and ask for confirmation
+- When the user confirms, reply ONLY with this JSON (nothing else):
   {"status": "complete", "email": "...", "topics": [...], "time": "HH:MM", "tz": "..."}
-- Si l'utilisateur veut modifier une info, permets-le
-- Rappelle toujours que l'utilisateur peut se désinscrire à tout moment
+- Let the user change any item
+- Always remind the user they can unsubscribe at any time
 
-L'utilisateur est déjà authentifié. Session: {{$json.sessionId}}
+The user is already authenticated. Session: {{$json.sessionId}}
 ```
 
-**Activer la mémoire :** Dans l'AI Agent, configure **Memory** → "Window Buffer Memory" avec une fenêtre de 20 messages. Cela permet à l'agent de se souvenir du contexte de la conversation.
+**Enable memory:** in the AI Agent, set **Memory** → "Window Buffer Memory" with a 20-message window so the agent keeps conversation context.
 
-### Extraction des données collectées
+### Extracting the collected data
 
-Après l'AI Agent, ajoute un nœud **IF** qui vérifie si la réponse contient `"status": "complete"` :
+After the AI Agent, add an **IF** node that checks whether the reply contains `"status": "complete"`:
 
 ```javascript
-// Nœud Code — parser la réponse de l'IA
+// Code node — parse the AI reply
 const response = $json.output;
 try {
-  // L'IA peut avoir mis du texte autour du JSON, on l'extrait
+  // The AI may wrap the JSON in text; extract it
   const jsonMatch = response.match(/\{[\s\S]*\}/);
   if (jsonMatch) {
     const data = JSON.parse(jsonMatch[0]);
@@ -312,49 +312,49 @@ try {
 return [{ json: { isComplete: false, message: response } }];
 ```
 
-### Sauvegarde dans Supabase
+### Saving to Supabase
 
-Quand `isComplete: true` :
-1. Nœud Supabase `INSERT` dans `preferences`
-2. Nœud Supabase `UPDATE` dans `users` → mettre `gdpr_consent: true` et `gdpr_consent_date: now()`
-3. Répondre à l'utilisateur : "Parfait ! Ta newsletter sera envoyée chaque jour à [heure]. À bientôt !"
+When `isComplete: true`:
+1. Supabase node `INSERT` into `preferences`
+2. Supabase node `UPDATE` on `users` → set `gdpr_consent: true` and `gdpr_consent_date: now()`
+3. Reply to the user: "Great! Your newsletter will be sent every day at [time]. See you soon!"
 
 ---
 
-## 6. MUST 3 — Récupération des news depuis plusieurs sources
+## 6. Core 3 — Fetching news from multiple sources
 
-### Objectif
+### Goal
 
-Récupérer des articles d'actualité depuis au moins 2-3 sources différentes.
+Fetch news articles from at least 2-3 different sources.
 
-### Sources recommandées (APIs gratuites)
+### Recommended sources (free APIs)
 
-| Source | API | Limite gratuite | Nœud N8N |
+| Source | API | Free limit | n8n node |
 |---|---|---|---|
-| **NewsAPI** | newsapi.org | 100 req/jour | HTTP Request |
-| **The Guardian** | open-platform.theguardian.com | 500 req/jour | HTTP Request |
-| **RSS Feeds** | Tout site avec flux RSS | Illimité | RSS Feed Read |
-| **GNews** | gnews.io | 100 req/jour | HTTP Request |
+| **NewsAPI** | newsapi.org | 100 req/day | HTTP Request |
+| **The Guardian** | open-platform.theguardian.com | 500 req/day | HTTP Request |
+| **RSS Feeds** | Any site with an RSS feed | Unlimited | RSS Feed Read |
+| **GNews** | gnews.io | 100 req/day | HTTP Request |
 
-### Workflow de récupération (dans le Workflow B)
+### Fetch workflow (in Workflow B)
 
 ```
 [Schedule Trigger]
         ↓
-[Supabase: liste de tous les topics uniques de tous les users actifs]
+[Supabase: list of all unique topics of all active users]
         ↓
-[Split In Batches] ← pour traiter topic par topic
+[Split In Batches] ← process topic by topic
         ↓
 [HTTP Request: NewsAPI] + [RSS Feed Read: Guardian]
         ↓
-[Merge] ← fusionner les résultats des deux sources
+[Merge] ← combine results from both sources
         ↓
-[Code: déduplications + nettoyage]
+[Code: dedup + cleanup]
         ↓
-[Continuer vers le filtrage IA]
+[Continue to AI filtering]
 ```
 
-### Configuration du nœud HTTP Request pour NewsAPI
+### HTTP Request node for NewsAPI
 
 - **Method:** GET
 - **URL:** `https://newsapi.org/v2/everything`
@@ -363,34 +363,34 @@ Récupérer des articles d'actualité depuis au moins 2-3 sources différentes.
   - `language` : `fr`
   - `sortBy` : `publishedAt`
   - `pageSize` : `10`
-  - `apiKey` : (mets ta clé dans les credentials ou directement ici pour commencer)
+  - `apiKey` : (store your key in credentials, or inline to get started)
 
-### Nœud RSS Feed
+### RSS Feed node
 
-N8N a un nœud natif **RSS Feed Read**. Configure simplement l'URL du flux :
+n8n has a native **RSS Feed Read** node. Just set the feed URL:
 - Le Monde : `https://www.lemonde.fr/rss/une.xml`
 - BBC : `https://feeds.bbci.co.uk/news/rss.xml`
 - Reuters : `https://feeds.reuters.com/reuters/topNews`
 
-### Nettoyage des données (nœud Code)
+### Data cleanup (Code node)
 
 ```javascript
-// Normaliser les articles de toutes les sources
+// Normalize articles from all sources
 const articles = $input.all().map(item => {
   const a = item.json;
   return {
     json: {
-      title: a.title || a.headline || 'Sans titre',
+      title: a.title || a.headline || 'Untitled',
       description: a.description || a.summary || a.content?.substring(0, 300) || '',
       url: a.url || a.webUrl || a.link,
-      source: a.source?.name || a.sectionName || 'Source inconnue',
+      source: a.source?.name || a.sectionName || 'Unknown source',
       publishedAt: a.publishedAt || a.webPublicationDate || new Date().toISOString(),
       topic: $('Split In Batches').item.json.topic
     }
   };
 });
 
-// Déduplications par URL
+// Dedup by URL
 const seen = new Set();
 return articles.filter(a => {
   if (seen.has(a.json.url)) return false;
@@ -401,41 +401,41 @@ return articles.filter(a => {
 
 ---
 
-## 7. MUST 4 — Filtrage IA par utilisateur
+## 7. Core 4 — Per-user AI filtering
 
-### Objectif
+### Goal
 
-Pour chaque utilisateur, l'IA sélectionne les articles pertinents parmi tous ceux récupérés, et génère un résumé court.
+For each user, the AI picks the relevant articles among all fetched ones and writes a short summary.
 
 ### Architecture
 
 ```
-[Articles récupérés] + [Préférences utilisateur depuis Supabase]
+[Fetched articles] + [User preferences from Supabase]
                 ↓
-         [AI Agent: filtrage]
+         [AI Agent: filtering]
                 ↓
-         [Code: parser JSON de l'IA]
+         [Code: parse AI JSON]
                 ↓
-         [Articles filtrés avec résumés]
+         [Filtered articles with summaries]
 ```
 
-### Prompt de filtrage
+### Filtering prompt
 
-Dans un nœud **AI Agent** ou **Basic LLM Chain** :
+In an **AI Agent** or **Basic LLM Chain** node:
 
 ```
-Tu es un éditeur de newsletter. Voici les préférences d'un abonné :
-- Centres d'intérêt : {{ $json.topics }}
-- Langue souhaitée : {{ $json.language }}
-- Nombre d'articles souhaités : {{ $json.num_articles }}
+You are a newsletter editor. Here are a subscriber's preferences:
+- Interests: {{ $json.topics }}
+- Preferred language: {{ $json.language }}
+- Number of articles: {{ $json.num_articles }}
 
-Voici une liste d'articles disponibles aujourd'hui :
+Here is the list of articles available today:
 {{ JSON.stringify($('Merge articles').all().map(i => i.json)) }}
 
-Sélectionne exactement {{ $json.num_articles }} articles qui correspondent le mieux aux centres d'intérêt de cet abonné.
-Pour chaque article sélectionné, génère un résumé de 2-3 phrases en {{ $json.language }}.
+Select exactly {{ $json.num_articles }} articles that best match this subscriber's interests.
+For each selected article, write a 2-3 sentence summary in {{ $json.language }}.
 
-Réponds UNIQUEMENT avec ce JSON, sans texte avant ni après :
+Reply ONLY with this JSON, no text before or after:
 {
   "articles": [
     {
@@ -448,15 +448,15 @@ Réponds UNIQUEMENT avec ce JSON, sans texte avant ni après :
 }
 ```
 
-> ⚠️ Attention à la taille du contexte ! Si tu as beaucoup d'articles, tu peux dépasser la fenêtre de contexte du modèle. Limite à 20-30 articles en entrée.
+> ⚠️ Watch the context size! Many articles can exceed the model's context window. Limit input to 20-30 articles.
 
-### Optimisation des tokens (COULD)
+### Token optimization (Extra)
 
-Pour économiser des tokens, tu peux pré-filtrer par topic avant d'envoyer à l'IA :
+To save tokens, pre-filter by topic before calling the AI:
 
 ```javascript
-// Nœud Code — pré-filtre simple par mots-clés avant l'IA
-const userTopics = $json.topics; // ex: ['tech', 'IA', 'climat']
+// Code node — simple keyword pre-filter before the AI
+const userTopics = $json.topics; // e.g. ['tech', 'AI', 'climate']
 const articles = $('Merge').all().map(i => i.json);
 
 const filtered = articles.filter(a => {
@@ -464,100 +464,100 @@ const filtered = articles.filter(a => {
   return userTopics.some(topic => text.includes(topic.toLowerCase()));
 });
 
-// Garde au max 20 articles pour l'IA
+// Keep at most 20 articles for the AI
 return filtered.slice(0, 20).map(a => ({ json: a }));
 ```
 
 ---
 
-## 8. MUST 5 — Envoi de la newsletter par email
+## 8. Core 5 — Sending the newsletter by email
 
-### Objectif
+### Goal
 
-Envoyer un email bien formaté à l'utilisateur avec les articles sélectionnés.
+Send a well-formatted email to the user with the selected articles.
 
-### Options d'envoi d'email dans N8N
+### Email options in n8n
 
-| Option | Avantage | Inconvénient |
+| Option | Pros | Cons |
 |---|---|---|
-| **Gmail** (nœud natif) | Simple, gratuit | 500 emails/jour max |
-| **Send Email (SMTP)** | Fonctionne avec n'importe quel provider | Config SMTP nécessaire |
-| **Brevo (ex-Sendinblue)** | 300 emails/jour gratuits, bon delivrability | Compte à créer |
-| **Resend** | Simple, 100 emails/jour gratuits | API Key |
+| **Gmail** (native node) | Simple, free | 500 emails/day max |
+| **Send Email (SMTP)** | Works with any provider | Requires SMTP config |
+| **Brevo (formerly Sendinblue)** | 300 free emails/day, good deliverability | Account needed |
+| **Resend** | Simple, 100 free emails/day | API Key |
 
-### Nœud Gmail — configuration
+### Gmail node configuration
 
-1. Dans N8N → Credentials → New → "Gmail OAuth2"
-2. Suis le guide Google OAuth
-3. Dans le nœud Gmail :
+1. In n8n → Credentials → New → "Gmail OAuth2"
+2. Follow the Google OAuth guide
+3. In the Gmail node:
    - **To:** `{{ $json.email }}`
-   - **Subject:** `Ta newsletter du {{ new Date().toLocaleDateString('fr-FR') }}`
-   - **Email Type:** HTML (pour le COULD 1) ou Text
-   - **Message:** voir ci-dessous
+   - **Subject:** `Your newsletter for {{ new Date().toLocaleDateString('fr-FR') }}`
+   - **Email Type:** HTML (for Extra 1) or Text
+   - **Message:** see below
 
-### Template email texte simple (pour commencer)
+### Simple plain-text email template (to start)
 
 ```javascript
-// Nœud Code — construire le corps de l'email
-const articles = $json.articles; // sortie de l'IA
+// Code node — build the email body
+const articles = $json.articles; // AI output
 const userName = $json.username;
 const date = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'nuuser', month: 'long' });
 
-let body = `Bonjour ${userName},\n\n`;
-body += `Voici ta sélection d'actualités pour ${date} :\n\n`;
+let body = `Hello ${userName},\n\n`;
+body += `Here is your news selection for ${date}:\n\n`;
 body += `${'─'.repeat(50)}\n\n`;
 
 articles.forEach((article, i) => {
   body += `${i + 1}. ${article.title}\n`;
-  body += `   Source : ${article.source}\n`;
+  body += `   Source: ${article.source}\n`;
   body += `   ${article.summary}\n`;
-  body += `   → Lire : ${article.url}\n\n`;
+  body += `   → Read: ${article.url}\n\n`;
 });
 
 body += `${'─'.repeat(50)}\n`;
-body += `Pour modifier tes préférences ou te désinscrire, réponds à ce message ou écris à notre chatbot.\n`;
-body += `\nPersona — Ta newsletter personnalisée par IA`;
+body += `To change your preferences or unsubscribe, reply to this message or talk to our chatbot.\n`;
+body += `\nPersona — Your AI-personalized newsletter`;
 
-return [{ json: { emailBody: body, emailSubject: `📰 Ta newsletter du ${date}` } }];
+return [{ json: { emailBody: body, emailSubject: `📰 Your newsletter for ${date}` } }];
 ```
 
 ---
 
-## 9. MUST 6 — Planification (schedule par utilisateur)
+## 9. Core 6 — Per-user scheduling
 
-### Problème à résoudre
+### Problem
 
-N8N ne permet pas un schedule différent par utilisateur nativement. La solution : un **Schedule Trigger qui tourne toutes les heures** et vérifie quels utilisateurs doivent recevoir leur newsletter à cet instant.
+n8n does not natively support a different schedule per user. Solution: a **Schedule Trigger running every hour** that checks which users are due at that moment.
 
-### Logique de vérification
+### Check logic
 
 ```
-[Schedule Trigger: toutes les heures]
+[Schedule Trigger: every hour]
         ↓
-[Code: calculer l'heure actuelle en UTC]
+[Code: compute current UTC hour]
         ↓
-[Supabase: SELECT users + preferences WHERE schedule_time = heure_actuelle AND is_active = true]
+[Supabase: SELECT users + preferences WHERE schedule_time = current_hour AND is_active = true]
         ↓
-[IF: résultats trouvés?]
-        ↓ Oui
-[SplitInBatches: traiter 1 user à la fois]
+[IF: results found?]
+        ↓ Yes
+[SplitInBatches: one user at a time]
         ↓
-[Récupérer news + Filtrer + Envoyer]
+[Fetch news + Filter + Send]
 ```
 
-### Nœud Code — vérification de l'heure
+### Code node — hour check
 
 ```javascript
-// Calculer l'heure actuelle arrondie à l'heure
+// Compute the current hour, rounded to the hour
 const now = new Date();
 const currentHour = now.getUTCHours().toString().padStart(2, '0') + ':00:00';
 
 return [{ json: { currentHour } }];
 ```
 
-### Requête Supabase
+### Supabase query
 
-Dans le nœud Supabase, utilise une requête personnalisée (mode "Execute Query") :
+In the Supabase node, use a custom query ("Execute Query" mode):
 
 ```sql
 SELECT u.id, u.email, u.username, p.topics, p.language, p.num_articles, p.custom_prompt
@@ -568,82 +568,83 @@ WHERE p.schedule_time = '{{ $json.currentHour }}'
   AND u.gdpr_consent = true;
 ```
 
-> Pour les timezones : c'est un problème complexe. Pour commencer, demande aux utilisateurs leur heure en UTC. Pour la version avancée, utilise la bibliothèque `luxon` dans un nœud Code pour convertir.
+> Timezones are tricky. To start, ask users for their time in UTC. For an advanced version, use the `luxon` library in a Code node to convert.
 
 ---
 
-## 10. MUST 7 — RGPD de base & désinscription
+## 10. Core 7 — Basic GDPR & unsubscribe
 
-### Ce que tu dois implémenter minimum
+### Minimum to implement
 
-**Consentement :** Lors de l'inscription via le chatbot, l'agent doit explicitement mentionner :
-- Que l'email sera stocké et utilisé pour envoyer des newsletters
-- Que l'utilisateur peut se désinscrire à tout moment
-- Le consentement doit être enregistré dans la DB (`gdpr_consent = true`)
+**Consent:** during chatbot sign-up, the agent must explicitly state:
+- That the email will be stored and used to send newsletters
+- That the user can unsubscribe at any time
+- Consent must be recorded in the DB (`gdpr_consent = true`)
 
-**Désinscription :** Deux méthodes à implémenter :
+**Unsubscribe:** two methods:
 
-#### Méthode 1 — Via le chatbot
+#### Method 1 — Through the chatbot
 
-Dans ton AI Agent du Workflow A, gère l'intent "désinscription" :
+In the Workflow A AI Agent, handle the "unsubscribe" intent:
 
 ```javascript
-// Si l'IA détecte une intention de désinscription
+// If the AI detects an unsubscribe intent
 // Supabase UPDATE users SET is_active = false WHERE id = userId
-// Supabase UPDATE users SET email = 'DELETED_' + id WHERE id = userId (anonymisation)
+// Supabase UPDATE users SET email = 'DELETED_' + id WHERE id = userId (anonymization)
 ```
 
-#### Méthode 2 — Lien dans chaque email (Workflow C)
+#### Method 2 — Link in every email (Workflow C)
 
-Ajoute en bas de chaque newsletter :
-
-```
-Pour vous désinscrire : https://ton-n8n.com/webhook/unsubscribe?uid={{ userId }}&token={{ token }}
-
-Et pour le feedback email, ajoutez aussi dans le footer :
+Add at the bottom of every newsletter:
 
 ```
-J'ai aimé : https://ton-n8n.com/webhook/feedback?uid={{ userId }}&token={{ token }}&newsletter_id={{ newsletterId }}&rating=good
-Je n'ai pas aimé : https://ton-n8n.com/webhook/feedback?uid={{ userId }}&token={{ token }}&newsletter_id={{ newsletterId }}&rating=bad
+To unsubscribe: https://ton-n8n.com/webhook/unsubscribe?uid={{ userId }}&token={{ token }}
 ```
 
-Puis crée un **Workflow C** avec un **Webhook Trigger** :
+For email feedback, also add to the footer:
+
+```
+I liked it: https://ton-n8n.com/webhook/feedback?uid={{ userId }}&token={{ token }}&newsletter_id={{ newsletterId }}&rating=good
+I didn't like it: https://ton-n8n.com/webhook/feedback?uid={{ userId }}&token={{ token }}&newsletter_id={{ newsletterId }}&rating=bad
+```
+
+Then create **Workflow C** with a **Webhook Trigger**:
 
 ```
 [Webhook: GET /unsubscribe]
         ↓
-[Code: vérifier uid + token]
+[Code: verify uid + token]
         ↓
 [Supabase: UPDATE is_active = false]
         ↓
-[Respond to Webhook: "Vous avez bien été désinscrit."]
+[Respond to Webhook: "You have been unsubscribed."]
 ```
 
-> **Sécurité du lien :** Le `token` doit être un hash unique par utilisateur (`sha256(userId + secret_salt)`) pour éviter qu'un attaquant désinscrive quelqu'un d'autre.
+> **Link security:** the `token` must be a unique per-user hash (`sha256(userId + secret_salt)`) so an attacker cannot unsubscribe someone else.
 
-### Droit à l'oubli (suppression de données)
+### Right to erasure (data deletion)
 
 ```javascript
-// Option 1 : vraie suppression
+// Option 1: hard delete
 // DELETE FROM users WHERE id = userId
 
-// Option 2 : anonymisation (plus safe, garde les logs)
+// Option 2: anonymization (safer, keeps logs)
 // UPDATE users SET email = 'deleted_' + id, username = 'deleted_' + id, is_active = false
 // DELETE FROM preferences WHERE user_id = userId
 ```
 
 ---
 
-## 11. COULD 1 — Newsletter en HTML
+## 11. Extra 1 — HTML newsletter
 
-### Pourquoi c'est utile
+### Why
 
-Les emails HTML sont bien plus lisibles et professionnels. N8N + Gmail supportent parfaitement le HTML.
+HTML emails are far more readable and professional. n8n + Gmail fully support HTML.
 
-### Template HTML simple
+### Simple HTML template
 
 ```javascript
-// Nœud Code — générer le HTML
+// Code node — generate the HTML
 const articles = $json.articles;
 const userName = $json.username;
 const date = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'nuuser', month: 'long' });
@@ -665,15 +666,15 @@ const html = `
 <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f9f9f9;">
   <div style="background:#6366f1; color:white; padding:24px; border-radius:8px 8px 0 0; text-align:center;">
     <h1 style="margin:0; font-size:24px;">📰 Persona</h1>
-    <p style="margin:8px 0 0; opacity:0.8;">Ta newsletter du ${date}</p>
+    <p style="margin:8px 0 0; opacity:0.8;">Your newsletter for ${date}</p>
   </div>
 
   <div style="background:white; padding:24px; border-radius:0 0 8px 8px;">
-    <p style="color:#555;">Bonjour <strong>${userName}</strong>, voici ta sélection du jour :</p>
+    <p style="color:#555;">Hello <strong>${userName}</strong>, here is today's selection:</p>
     ${articleCards}
     <hr style="border:none; border-top:1px solid #eee; margin:24px 0;">
     <p style="font-size:12px; color:#aaa; text-align:center;">
-      Pour te désinscrire : <a href="UNSUBSCRIBE_LINK" style="color:#6366f1;">cliquer ici</a>
+      To unsubscribe: <a href="UNSUBSCRIBE_LINK" style="color:#6366f1;">click here</a>
     </p>
   </div>
 </body>
@@ -683,64 +684,64 @@ const html = `
 return [{ json: { html } }];
 ```
 
-Dans le nœud Gmail, sélectionne **"HTML"** comme type de message et utilise `{{ $json.html }}`.
+In the Gmail node, select **"HTML"** as the message type and use `{{ $json.html }}`.
 
 ---
 
-## 12. COULD 2 — Commentaires sur les newsletters passées
+## 12. Extra 2 — Feedback on past newsletters
 
 ### Concept
 
-L'utilisateur peut écrire dans le chatbot : "La newsletter d'hier était bien, mais je n'aime pas les articles de tech pure, préfère de l'IA appliquée". L'IA mémorise ces préférences pour les prochaines newsletters.
+The user can write in the chatbot: "Yesterday's newsletter was good, but I don't like pure tech articles, prefer applied AI". The AI remembers these preferences for future newsletters.
 
-### Implémentation
+### Implementation
 
-**Dans le Workflow A (chatbot) :**
+**In Workflow A (chatbot):**
 
 ```javascript
-// L'AI Agent détecte les feedbacks et les stocke
-// System prompt à ajouter :
+// The AI Agent detects feedback and stores it
+// Add to the system prompt:
 
-"Si l'utilisateur donne du feedback sur sa newsletter ou ses préférences,
-sauvegarde ce feedback avec le JSON suivant :
-{\"action\": \"save_feedback\", \"feedback\": \"[texte du feedback]\"}
-Ce feedback sera utilisé pour personnaliser les prochaines newsletters."
+"If the user gives feedback on their newsletter or preferences,
+save it with the following JSON:
+{\"action\": \"save_feedback\", \"feedback\": \"[feedback text]\"}
+This feedback will be used to personalize future newsletters."
 ```
 
-Quand l'agent retourne `action: save_feedback` :
-- Nœud Supabase : `UPDATE newsletter_logs SET feedback = '...' WHERE user_id = x ORDER BY sent_at DESC LIMIT 1`
-- Ou créer une table `user_notes` avec les préférences accumulées
+When the agent returns `action: save_feedback`:
+- Supabase node: `UPDATE newsletter_logs SET feedback = '...' WHERE user_id = x ORDER BY sent_at DESC LIMIT 1`
+- Or create a `user_notes` table with accumulated preferences
 
-**Dans le Workflow B (envoi newsletter) :**
+**In Workflow B (newsletter delivery):**
 
-Récupérer les derniers feedbacks de l'utilisateur et les injecter dans le prompt de filtrage :
+Fetch the user's latest feedback and inject it into the filtering prompt:
 
 ```javascript
-// Ajouter au prompt de l'IA :
-`Feedbacks des newsletters précédentes de cet utilisateur :
+// Add to the AI prompt:
+`Feedback from this user's previous newsletters:
 ${previousFeedbacks.join('\n')}
-Tiens compte de ces feedbacks pour ta sélection.`
+Take this feedback into account in your selection.`
 ```
 
 ---
 
-## 13. COULD 3 — Fact-checking
+## 13. Extra 3 — Fact-checking
 
-### Concept simple
+### Simple concept
 
-Avant d'inclure un article, vérifier qu'il est mentionné par au moins une autre source.
+Before including an article, check that at least one other source mentions it.
 
-### Implémentation légère
+### Lightweight implementation
 
 ```javascript
-// Nœud Code — vérification croisée simple
-// Pour chaque article, chercher si le même sujet est couvert par une autre source
+// Code node — simple cross-check
+// For each article, check whether another source covers the same topic
 
 const articles = $input.all().map(i => i.json);
 const checkedArticles = [];
 
 for (const article of articles) {
-  // Cherche des articles avec des mots-clés similaires
+  // Look for articles with similar keywords
   const keywords = article.title.split(' ')
     .filter(w => w.length > 4)
     .slice(0, 3);
@@ -753,172 +754,172 @@ for (const article of articles) {
 
   checkedArticles.push({
     ...article,
-    factCheckScore: confirmedBy.length, // 0 = non confirmé, 1+ = confirmé
+    factCheckScore: confirmedBy.length, // 0 = unconfirmed, 1+ = confirmed
     confirmedBySources: confirmedBy.map(a => a.source)
   });
 }
 
-// Prioriser les articles confirmés
+// Prioritize confirmed articles
 return checkedArticles
   .sort((a, b) => b.factCheckScore - a.factCheckScore)
   .map(a => ({ json: a }));
 ```
 
-### Version avancée avec IA
+### Advanced AI version
 
-Utilise un second appel LLM pour demander à l'IA d'évaluer la cohérence d'une information avec d'autres sources récupérées.
+Use a second LLM call asking the AI to assess an item's consistency with other fetched sources.
 
 ---
 
-## 14. COULD 4 — Prompt personnalisé par utilisateur
+## 14. Extra 4 — Per-user custom prompt
 
 ### Concept
 
-Chaque utilisateur peut customiser le ton, le format, la longueur de sa newsletter via le chatbot.
+Each user can customize the tone, format and length of their newsletter through the chatbot.
 
-### Dans le chatbot (Workflow A)
+### In the chatbot (Workflow A)
 
-Ajoute à l'AI Agent :
+Add to the AI Agent:
 
 ```
-Si l'utilisateur veut personnaliser sa newsletter (ton, format, longueur, style),
-récupère sa demande et réponds avec :
+If the user wants to customize their newsletter (tone, format, length, style),
+capture the request and reply with:
 {"action": "update_prompt", "custom_prompt": "..."}
 
-Exemples de prompts personnalisés :
-- "Rédige comme si tu t'adressais à un expert en IA, avec du vocabulaire technique"
-- "Sois bref, 3 articles max, style télégraphique"  
-- "Utilise un ton humoristique et léger"
+Examples of custom prompts:
+- "Write as if addressing an AI expert, with technical vocabulary"
+- "Be brief, 3 articles max, telegraphic style"
+- "Use a light, humorous tone"
 ```
 
-### Dans le Workflow B
+### In Workflow B
 
-Utilise le `custom_prompt` de la table `preferences` dans ton appel LLM :
+Use the `custom_prompt` from the `preferences` table in the LLM call:
 
 ```javascript
 const systemPrompt = user.custom_prompt
-  ? `${basePrompt}\n\nInstructions personnalisées pour cet utilisateur : ${user.custom_prompt}`
+  ? `${basePrompt}\n\nCustom instructions for this user: ${user.custom_prompt}`
   : basePrompt;
 ```
 
 ---
 
-## 15. Ordre de construction recommandé
+## 15. Recommended build order
 
-Voici l'ordre optimal pour construire le projet en évitant les blocages :
+The optimal order to build the project without getting blocked:
 
 ```
-SEMAINE 1 — Base fonctionnelle
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WEEK 1 — Working base
+━━━━━━━━━━━━━━━━━━━━━
 
-☐ Étape 1 : Créer les tables Supabase (section 3)
-☐ Étape 2 : Workflow B partiel — récupérer des news et les afficher (section 6)
-            → Juste pour tester que tes APIs fonctionnent
-☐ Étape 3 : Workflow A — Chat Trigger + AI Agent simple qui répond (section 4-5)
-            → Sans authentification pour l'instant
-☐ Étape 4 : Ajouter l'onboarding dans le Workflow A (section 5)
-☐ Étape 5 : Compléter le Workflow B — filtrage IA + envoi email (sections 7-8)
+☐ Step 1: Create the Supabase tables (section 3)
+☐ Step 2: Partial Workflow B — fetch and display news (section 6)
+          → Just to check your APIs work
+☐ Step 3: Workflow A — Chat Trigger + simple replying AI Agent (sections 4-5)
+          → No authentication yet
+☐ Step 4: Add onboarding to Workflow A (section 5)
+☐ Step 5: Complete Workflow B — AI filtering + email sending (sections 7-8)
 
-SEMAINE 2 — Solidification
-━━━━━━━━━━━━━━━━━━━━━━━━━━
+WEEK 2 — Hardening
+━━━━━━━━━━━━━━━━━━
 
-☐ Étape 6 : Ajouter l'authentification (section 4)
-☐ Étape 7 : Planification par utilisateur (section 9)
-☐ Étape 8 : RGPD + désinscription, Workflow C (section 10)
+☐ Step 6: Add authentication (section 4)
+☐ Step 7: Per-user scheduling (section 9)
+☐ Step 8: GDPR + unsubscribe, Workflow C (section 10)
 
-SEMAINE 3 — Bonus
-━━━━━━━━━━━━━━━━━
+WEEK 3 — Extras
+━━━━━━━━━━━━━━━
 
-☐ Étape 9 : Newsletter HTML (section 11) ← priorité haute pour la démo
-☐ Étape 10 : Feedback utilisateur (section 12)
-☐ Étape 11 : Fact-checking (section 13)
-☐ Étape 12 : Prompt personnalisé (section 14)
+☐ Step 9: HTML newsletter (section 11) ← high priority for the demo
+☐ Step 10: User feedback (section 12)
+☐ Step 11: Fact-checking (section 13)
+☐ Step 12: Custom prompt (section 14)
 ```
 
 ---
 
-## 16. Erreurs fréquentes des débutants N8N
+## 16. Common n8n beginner mistakes
 
-### Expressions mal formées
+### Malformed expressions
 
 ```
-❌ {{ json.email }}        → manque le $
+❌ {{ json.email }}        → missing $
 ✅ {{ $json.email }}
 
-❌ {{ $json['email'] }}    → fonctionne aussi mais moins lisible
+❌ {{ $json['email'] }}    → works but less readable
 ✅ {{ $json.email }}
 
-❌ {{ $node['Mon Node'].json.email }}   → ancienne syntaxe
-✅ {{ $('Mon Node').item.json.email }}  → nouvelle syntaxe
+❌ {{ $node['Mon Node'].json.email }}   → old syntax
+✅ {{ $('Mon Node').item.json.email }}  → new syntax
 ```
 
-### Nœud qui ne reçoit rien
+### Node receives nothing
 
-Si un nœud semble ne pas recevoir de données, c'est souvent parce que le nœud précédent retourne un tableau vide. Ajoute un nœud **IF** ou **Code** pour déboguer :
+If a node seems to receive no data, the previous node usually returned an empty array. Add an **IF** or **Code** node to debug:
 
 ```javascript
-// Nœud Code de debug
-console.log('Données reçues:', JSON.stringify($input.all()));
-return $input.all(); // passe-plat
+// Debug Code node
+console.log('Received data:', JSON.stringify($input.all()));
+return $input.all(); // pass-through
 ```
 
 ### AI Agent vs Basic LLM Chain
 
-- **AI Agent** : a de la mémoire, peut utiliser des outils (ex: rechercher dans Supabase), multi-tours. Utilise pour le chatbot.
-- **Basic LLM Chain** : appel unique sans mémoire. Utilise pour le filtrage/résumé dans le Workflow B.
+- **AI Agent**: has memory, can use tools (e.g. query Supabase), multi-turn. Use for the chatbot.
+- **Basic LLM Chain**: single call, no memory. Use for filtering/summarizing in Workflow B.
 
-### Credentials dans le JSON exporté
+### Credentials in the exported JSON
 
-Avant de partager ton fichier JSON :
-1. N8N > Settings > Export
-2. Ouvre le JSON
-3. Cherche les champs `"credentials"` et remplace les valeurs par des placeholders
-4. Cherche les nœuds HTTP Request pour supprimer les headers d'auth
+Before sharing your JSON file:
+1. n8n > Settings > Export
+2. Open the JSON
+3. Find `"credentials"` fields and replace values with placeholders
+4. Check HTTP Request nodes and remove auth headers
 
-### Erreur "Workflow could not be started"
+### "Workflow could not be started" error
 
-Vérifie que :
-- Le workflow est bien **activé** (toggle en haut à droite)
-- Le nœud trigger est bien configuré
-- Les credentials sont valides (petit indicateur vert sur le nœud)
-
----
-
-## 17. Checklist avant la démo
-
-### Fonctionnalités MUST
-
-- [ ] Le chatbot est accessible via l'URL générée par le Chat Trigger
-- [ ] Un nouvel utilisateur peut s'inscrire
-- [ ] Un utilisateur existant peut se connecter
-- [ ] Un utilisateur connecté peut fournir ses préférences (topics, email, horaire)
-- [ ] Le workflow récupère des news depuis au minimum 2 sources
-- [ ] L'IA filtre les news selon les préférences de l'utilisateur
-- [ ] Un email est envoyé à l'utilisateur avec les news sélectionnées
-- [ ] La newsletter est envoyée à l'heure choisie par l'utilisateur
-- [ ] Un utilisateur peut se désinscrire
-- [ ] Les données personnelles sont protégées (un user A ne peut pas voir les données de user B)
-
-### Sécurité
-
-- [ ] Les mots de passe sont hachés (pas stockés en clair)
-- [ ] Les sessions expirent
-- [ ] Le lien de désinscription contient un token signé
-- [ ] Le JSON exporté ne contient pas de credentials sensibles
-
-### RGPD
-
-- [ ] Le consentement est demandé et tracé en base
-- [ ] La désinscription supprime ou anonymise les données
-- [ ] L'email de newsletter contient un lien de désinscription
-
-### Pour la présentation
-
-- [ ] Préparer un compte de démo (ne pas utiliser ton vrai email)
-- [ ] Avoir des news en cache ou s'assurer que les APIs fonctionnent le jour J
-- [ ] Pouvoir expliquer pourquoi N8N vs coder from scratch (rapidité, no-code, intégrations natives, open-source)
-- [ ] Montrer le workflow visuellement dans l8N (c'est un argument de vente fort)
+Check that:
+- The workflow is **activated** (toggle top right)
+- The trigger node is configured
+- Credentials are valid (small green indicator on the node)
 
 ---
 
-*Guide rédigé pour le projet Persona — N8N v1.x | Supabase*
+## 17. Pre-demo checklist
+
+### Core features
+
+- [ ] The chatbot is reachable at the Chat Trigger URL
+- [ ] A new user can register
+- [ ] An existing user can log in
+- [ ] A logged-in user can provide preferences (topics, email, time)
+- [ ] The workflow fetches news from at least 2 sources
+- [ ] The AI filters news based on user preferences
+- [ ] An email with the selected news is sent to the user
+- [ ] The newsletter is sent at the user's chosen time
+- [ ] A user can unsubscribe
+- [ ] Personal data is protected (user A cannot see user B's data)
+
+### Security
+
+- [ ] Passwords are hashed (not stored in plain text)
+- [ ] Sessions expire
+- [ ] The unsubscribe link contains a signed token
+- [ ] The exported JSON contains no sensitive credentials
+
+### GDPR
+
+- [ ] Consent is requested and recorded in the DB
+- [ ] Unsubscribing deletes or anonymizes data
+- [ ] The newsletter email contains an unsubscribe link
+
+### For the presentation
+
+- [ ] Prepare a demo account (do not use your real email)
+- [ ] Have cached news or make sure the APIs work on the day
+- [ ] Be able to explain why n8n vs coding from scratch (speed, no-code, native integrations, open-source)
+- [ ] Show the workflow visually in n8n (a strong selling point)
+
+---
+
+*Guide for the Persona project — n8n v1.x | Supabase*
