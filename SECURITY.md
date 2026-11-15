@@ -1,4 +1,4 @@
-# Security Audit Report — Persona
+# Security Audit Report - Persona
 
 ## 1. Executive summary
 Persona was designed with a "security by design" approach. Although the project has no traditional GUI, the chatbot and webhook interactions are secured against common attack vectors.
@@ -32,4 +32,4 @@ Persona was designed with a "security by design" approach. Although the project 
 3. **HMAC upgrade** (recommended): replace the current bit-shift hash with a real HMAC-SHA256 via n8n's native "Crypto" node, if available in the target deployment.
 
 ---
-*Audit performed June 1, 2024 — updated June 4, 2026*
+*Audit performed June 1, 2024 - updated June 4, 2026*

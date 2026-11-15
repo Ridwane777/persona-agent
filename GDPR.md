@@ -1,4 +1,4 @@
-# GDPR Compliance Note — Persona
+# GDPR Compliance Note - Persona
 
 ## 1. Introduction
 **Persona** is an AI news aggregation service. To operate, it processes personal data belonging to its users. This note describes the technical and organizational measures in place to comply with the General Data Protection Regulation (GDPR).
@@ -33,7 +33,7 @@ Users can exercise their rights directly via the chatbot or the email links:
 - **Secure tokens**: unsubscribe links use a unique token generated with a secret salt (`PERSONA_SALT`), preventing malicious unsubscribes by third parties.
 
 ## 7. Data transfers
-Data is stored on **Supabase** (AWS/GCP infrastructure depending on configuration). News summaries are generated via **OpenRouter** (OpenAI/Anthropic). No personal data other than the username is sent to the LLM when summarizing news (only articles and topics are sent).
+Data is stored on **Supabase** (AWS/GCP infrastructure depending on configuration). News summaries are generated via **OpenRouter** (model: OpenAI GPT-4o-mini). No personal data other than the username is sent to the LLM when summarizing news (only articles and topics are sent).
 
 ---
 *Last updated: June 4, 2026*

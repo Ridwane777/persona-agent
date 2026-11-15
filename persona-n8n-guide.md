@@ -1,4 +1,4 @@
-# Complete Guide — Persona on n8n
+# Complete Guide - Persona on n8n
 > Personalized AI newsletter aggregator | First-time n8n usage
 
 ---
@@ -7,18 +7,18 @@
 
 1. [n8n in 5 minutes](#1-n8n-in-5-minutes)
 2. [Overall architecture](#2-overall-architecture)
-3. [Supabase — database schema](#3-supabase--database-schema)
-4. [Core 1 — Chatbot trigger & authentication](#4-core-1--chatbot-trigger--authentication)
-5. [Core 2 — User onboarding through the chatbot](#5-core-2--user-onboarding-through-the-chatbot)
-6. [Core 3 — Fetching news from multiple sources](#6-core-3--fetching-news-from-multiple-sources)
-7. [Core 4 — Per-user AI filtering](#7-core-4--per-user-ai-filtering)
-8. [Core 5 — Sending the newsletter by email](#8-core-5--sending-the-newsletter-by-email)
-9. [Core 6 — Per-user scheduling](#9-core-6--per-user-scheduling)
-10. [Core 7 — Basic GDPR & unsubscribe](#10-core-7--basic-gdpr--unsubscribe)
-11. [Extra 1 — HTML newsletter](#11-extra-1--html-newsletter)
-12. [Extra 2 — Feedback on past newsletters](#12-extra-2--feedback-on-past-newsletters)
-13. [Extra 3 — Fact-checking](#13-extra-3--fact-checking)
-14. [Extra 4 — Per-user custom prompt](#14-extra-4--per-user-custom-prompt)
+3. [Supabase - database schema](#3-supabase--database-schema)
+4. [Core 1 - Chatbot trigger & authentication](#4-core-1--chatbot-trigger--authentication)
+5. [Core 2 - User onboarding through the chatbot](#5-core-2--user-onboarding-through-the-chatbot)
+6. [Core 3 - Fetching news from multiple sources](#6-core-3--fetching-news-from-multiple-sources)
+7. [Core 4 - Per-user AI filtering](#7-core-4--per-user-ai-filtering)
+8. [Core 5 - Sending the newsletter by email](#8-core-5--sending-the-newsletter-by-email)
+9. [Core 6 - Per-user scheduling](#9-core-6--per-user-scheduling)
+10. [Core 7 - Basic GDPR & unsubscribe](#10-core-7--basic-gdpr--unsubscribe)
+11. [Extra 1 - HTML newsletter](#11-extra-1--html-newsletter)
+12. [Extra 2 - Feedback on past newsletters](#12-extra-2--feedback-on-past-newsletters)
+13. [Extra 3 - Fact-checking](#13-extra-3--fact-checking)
+14. [Extra 4 - Per-user custom prompt](#14-extra-4--per-user-custom-prompt)
 15. [Recommended build order](#15-recommended-build-order)
 16. [Common n8n beginner mistakes](#16-common-n8n-beginner-mistakes)
 17. [Pre-demo checklist](#17-pre-demo-checklist)
@@ -31,7 +31,7 @@
 
 | Term | Definition |
 |---|---|
-| **Workflow** | A chain of nodes — your "program" |
+| **Workflow** | A chain of nodes - your "program" |
 | **Node** | One step in the workflow (e.g. send an email, call an API) |
 | **Trigger** | The node that starts the workflow (chatbot, cron, webhook...) |
 | **Expression** | A dynamic value, syntax `{{ $json.champ }}` |
@@ -51,15 +51,15 @@ Each node receives an array of **items** (JSON objects) and returns a new one. T
 
 ### Most-used nodes
 
-- **Chat Trigger** — chatbot entry point
-- **AI Agent** — LLM with conversation memory
-- **HTTP Request** — external API call (news, etc.)
-- **Supabase** — read/write to the DB
-- **Code (JavaScript)** — custom logic
-- **IF / Switch** — conditional branching
-- **Send Email / Gmail** — sending emails
-- **Schedule Trigger** — runs at fixed times
-- **Set** — create/modify item fields
+- **Chat Trigger** - chatbot entry point
+- **AI Agent** - LLM with conversation memory
+- **HTTP Request** - external API call (news, etc.)
+- **Supabase** - read/write to the DB
+- **Code (JavaScript)** - custom logic
+- **IF / Switch** - conditional branching
+- **Send Email / Gmail** - sending emails
+- **Schedule Trigger** - runs at fixed times
+- **Set** - create/modify item fields
 
 ---
 
@@ -69,7 +69,7 @@ The project consists of **3 separate workflows**:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  WORKFLOW A — Chatbot (always active)                        │
+│  WORKFLOW A - Chatbot (always active)                        │
 │                                                              │
 │  Chat Trigger → AI Agent → Supabase (user CRUD)             │
 │                          → Authentication                    │
@@ -77,7 +77,7 @@ The project consists of **3 separate workflows**:
 └─────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────┐
-│  WORKFLOW B — Newsletter delivery (runs every hour           │
+│  WORKFLOW B - Newsletter delivery (runs every hour           │
 │              or every X minutes)                             │
 │                                                              │
 │  Schedule Trigger → Supabase (who is due now?)              │
@@ -88,7 +88,7 @@ The project consists of **3 separate workflows**:
 └─────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────┐
-│  WORKFLOW C — Unsubscribe (webhook or email link)            │
+│  WORKFLOW C - Unsubscribe (webhook or email link)            │
 │                                                              │
 │  Webhook Trigger → Supabase (delete/deactivate)             │
 │                  → Confirmation email                       │
@@ -97,7 +97,7 @@ The project consists of **3 separate workflows**:
 
 ---
 
-## 3. Supabase — database schema
+## 3. Supabase - database schema
 
 ### Tables
 
@@ -170,7 +170,7 @@ CREATE TABLE sessions (
 
 ---
 
-## 4. Core 1 — Chatbot trigger & authentication
+## 4. Core 1 - Chatbot trigger & authentication
 
 ### Goal
 
@@ -222,7 +222,7 @@ On every incoming message, before anything else:
 When the user wants to create an account:
 
 ```javascript
-// Code node — password hashing (simple)
+// Code node - password hashing (simple)
 const crypto = require('crypto');
 const password = $json.password;
 const hash = crypto.createHash('sha256').update(password).digest('hex');
@@ -234,7 +234,7 @@ Then a **Supabase** node in `INSERT` mode on the `users` table.
 **5. Login node**
 
 ```javascript
-// Code node — verification
+// Code node - verification
 const inputHash = crypto.createHash('sha256').update($json.password).digest('hex');
 const storedHash = $('Supabase: get user').item.json.password_hash;
 const isValid = inputHash === storedHash;
@@ -251,7 +251,7 @@ If valid → INSERT into `sessions` with `expires_at = now() + 24h`.
 
 ---
 
-## 5. Core 2 — User onboarding through the chatbot
+## 5. Core 2 - User onboarding through the chatbot
 
 ### Goal
 
@@ -265,7 +265,7 @@ A new user provides their interests, email and preferred time in natural convers
 
 ### AI Agent configuration
 
-**Recommended starter model:** OpenAI GPT-4o-mini (cheaper) or Claude Haiku via the Anthropic API.
+**Recommended starter model:** OpenAI GPT-4o-mini (cheap and fast), or any comparable small model available on OpenRouter.
 
 **Agent system prompt:**
 
@@ -297,7 +297,7 @@ The user is already authenticated. Session: {{$json.sessionId}}
 After the AI Agent, add an **IF** node that checks whether the reply contains `"status": "complete"`:
 
 ```javascript
-// Code node — parse the AI reply
+// Code node - parse the AI reply
 const response = $json.output;
 try {
   // The AI may wrap the JSON in text; extract it
@@ -321,7 +321,7 @@ When `isComplete: true`:
 
 ---
 
-## 6. Core 3 — Fetching news from multiple sources
+## 6. Core 3 - Fetching news from multiple sources
 
 ### Goal
 
@@ -401,7 +401,7 @@ return articles.filter(a => {
 
 ---
 
-## 7. Core 4 — Per-user AI filtering
+## 7. Core 4 - Per-user AI filtering
 
 ### Goal
 
@@ -455,7 +455,7 @@ Reply ONLY with this JSON, no text before or after:
 To save tokens, pre-filter by topic before calling the AI:
 
 ```javascript
-// Code node — simple keyword pre-filter before the AI
+// Code node - simple keyword pre-filter before the AI
 const userTopics = $json.topics; // e.g. ['tech', 'AI', 'climate']
 const articles = $('Merge').all().map(i => i.json);
 
@@ -470,7 +470,7 @@ return filtered.slice(0, 20).map(a => ({ json: a }));
 
 ---
 
-## 8. Core 5 — Sending the newsletter by email
+## 8. Core 5 - Sending the newsletter by email
 
 ### Goal
 
@@ -498,7 +498,7 @@ Send a well-formatted email to the user with the selected articles.
 ### Simple plain-text email template (to start)
 
 ```javascript
-// Code node — build the email body
+// Code node - build the email body
 const articles = $json.articles; // AI output
 const userName = $json.username;
 const date = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'nuuser', month: 'long' });
@@ -516,14 +516,14 @@ articles.forEach((article, i) => {
 
 body += `${'─'.repeat(50)}\n`;
 body += `To change your preferences or unsubscribe, reply to this message or talk to our chatbot.\n`;
-body += `\nPersona — Your AI-personalized newsletter`;
+body += `\nPersona - Your AI-personalized newsletter`;
 
 return [{ json: { emailBody: body, emailSubject: `📰 Your newsletter for ${date}` } }];
 ```
 
 ---
 
-## 9. Core 6 — Per-user scheduling
+## 9. Core 6 - Per-user scheduling
 
 ### Problem
 
@@ -545,7 +545,7 @@ n8n does not natively support a different schedule per user. Solution: a **Sched
 [Fetch news + Filter + Send]
 ```
 
-### Code node — hour check
+### Code node - hour check
 
 ```javascript
 // Compute the current hour, rounded to the hour
@@ -572,7 +572,7 @@ WHERE p.schedule_time = '{{ $json.currentHour }}'
 
 ---
 
-## 10. Core 7 — Basic GDPR & unsubscribe
+## 10. Core 7 - Basic GDPR & unsubscribe
 
 ### Minimum to implement
 
@@ -583,7 +583,7 @@ WHERE p.schedule_time = '{{ $json.currentHour }}'
 
 **Unsubscribe:** two methods:
 
-#### Method 1 — Through the chatbot
+#### Method 1 - Through the chatbot
 
 In the Workflow A AI Agent, handle the "unsubscribe" intent:
 
@@ -593,7 +593,7 @@ In the Workflow A AI Agent, handle the "unsubscribe" intent:
 // Supabase UPDATE users SET email = 'DELETED_' + id WHERE id = userId (anonymization)
 ```
 
-#### Method 2 — Link in every email (Workflow C)
+#### Method 2 - Link in every email (Workflow C)
 
 Add at the bottom of every newsletter:
 
@@ -635,7 +635,7 @@ Then create **Workflow C** with a **Webhook Trigger**:
 
 ---
 
-## 11. Extra 1 — HTML newsletter
+## 11. Extra 1 - HTML newsletter
 
 ### Why
 
@@ -644,7 +644,7 @@ HTML emails are far more readable and professional. n8n + Gmail fully support HT
 ### Simple HTML template
 
 ```javascript
-// Code node — generate the HTML
+// Code node - generate the HTML
 const articles = $json.articles;
 const userName = $json.username;
 const date = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'nuuser', month: 'long' });
@@ -688,7 +688,7 @@ In the Gmail node, select **"HTML"** as the message type and use `{{ $json.html 
 
 ---
 
-## 12. Extra 2 — Feedback on past newsletters
+## 12. Extra 2 - Feedback on past newsletters
 
 ### Concept
 
@@ -725,7 +725,7 @@ Take this feedback into account in your selection.`
 
 ---
 
-## 13. Extra 3 — Fact-checking
+## 13. Extra 3 - Fact-checking
 
 ### Simple concept
 
@@ -734,7 +734,7 @@ Before including an article, check that at least one other source mentions it.
 ### Lightweight implementation
 
 ```javascript
-// Code node — simple cross-check
+// Code node - simple cross-check
 // For each article, check whether another source covers the same topic
 
 const articles = $input.all().map(i => i.json);
@@ -771,7 +771,7 @@ Use a second LLM call asking the AI to assess an item's consistency with other f
 
 ---
 
-## 14. Extra 4 — Per-user custom prompt
+## 14. Extra 4 - Per-user custom prompt
 
 ### Concept
 
@@ -809,25 +809,25 @@ const systemPrompt = user.custom_prompt
 The optimal order to build the project without getting blocked:
 
 ```
-WEEK 1 — Working base
+WEEK 1 - Working base
 ━━━━━━━━━━━━━━━━━━━━━
 
 ☐ Step 1: Create the Supabase tables (section 3)
-☐ Step 2: Partial Workflow B — fetch and display news (section 6)
+☐ Step 2: Partial Workflow B - fetch and display news (section 6)
           → Just to check your APIs work
-☐ Step 3: Workflow A — Chat Trigger + simple replying AI Agent (sections 4-5)
+☐ Step 3: Workflow A - Chat Trigger + simple replying AI Agent (sections 4-5)
           → No authentication yet
 ☐ Step 4: Add onboarding to Workflow A (section 5)
-☐ Step 5: Complete Workflow B — AI filtering + email sending (sections 7-8)
+☐ Step 5: Complete Workflow B - AI filtering + email sending (sections 7-8)
 
-WEEK 2 — Hardening
+WEEK 2 - Hardening
 ━━━━━━━━━━━━━━━━━━
 
 ☐ Step 6: Add authentication (section 4)
 ☐ Step 7: Per-user scheduling (section 9)
 ☐ Step 8: GDPR + unsubscribe, Workflow C (section 10)
 
-WEEK 3 — Extras
+WEEK 3 - Extras
 ━━━━━━━━━━━━━━━
 
 ☐ Step 9: HTML newsletter (section 11) ← high priority for the demo
@@ -922,4 +922,4 @@ Check that:
 
 ---
 
-*Guide for the Persona project — n8n v1.x | Supabase*
+*Guide for the Persona project - n8n v1.x | Supabase*

@@ -1,4 +1,4 @@
-# Persona — Setup Guide
+# Persona - Setup Guide
 
 ## Before importing the workflows
 

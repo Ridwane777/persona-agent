@@ -1,4 +1,4 @@
-# 📰 Persona — AI-Powered Personalized Newsletter
+# 📰 Persona - AI-Powered Personalized Newsletter
 
 > An AI-driven personalized news aggregator with no graphical interface. Users talk to a chatbot, set their preferences, and automatically receive an HTML newsletter at the time they choose.
 
@@ -18,14 +18,14 @@ The project consists of **4 n8n workflows**, a **Supabase** database and a **RES
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  Workflow A — Chatbot (Onboarding & Preferences)                │
+│  Workflow A - Chatbot (Onboarding & Preferences)                │
 │  Trigger: Chat Trigger (built-in n8n web interface)            │
 │  → Secure sign-up / login                                      │
 │  → Preference setup (topics, schedule, language...)            │
 │  → Session authentication with expiry                          │
 └─────────────────────────────────────────────────────────────────┘
 ┌─────────────────────────────────────────────────────────────────┐
-│  Workflow A (API) — Chatbot as a REST API                       │
+│  Workflow A (API) - Chatbot as a REST API                       │
 │  Trigger: Webhook POST /webhook/api-chat                       │
 │  → Same logic as Workflow A                                    │
 │  → Replies with JSON { "reply": "..." } via Respond to Webhook │
@@ -35,7 +35,7 @@ The project consists of **4 n8n workflows**, a **Supabase** database and a **RES
                    [Supabase DB]
                           │
 ┌─────────────────────────────────────────────────────────────────┐
-│  Workflow B — Newsletter (Generation & Delivery)                │
+│  Workflow B - Newsletter (Generation & Delivery)                │
 │  Trigger: Webhook POST /webhook/trigger-newsletter             │
 │         called by cron-job.org every minute                    │
 │  → Fetch active users                                          │
@@ -47,7 +47,7 @@ The project consists of **4 n8n workflows**, a **Supabase** database and a **RES
 └─────────────────────────────────────────────────────────────────┘
                           │
 ┌─────────────────────────────────────────────────────────────────┐
-│  Workflow C — Unsubscribe (GDPR)                               │
+│  Workflow C - Unsubscribe (GDPR)                               │
 │  Trigger: Webhook GET /unsubscribe                             │
 │  → Verify the secure token                                     │
 │  → Anonymize email + deactivate account                        │
@@ -162,9 +162,9 @@ In n8n, for **each JSON file**:
 3. Select the matching file
 
 **Recommended import order:**
-1. `Persona_workflow_C.json` — Unsubscribe
-2. `Persona_workflow_A.json` — Chatbot
-3. `Persona_workflow_B.json` — Newsletter
+1. `Persona_workflow_C.json` - Unsubscribe
+2. `Persona_workflow_A.json` - Chatbot
+3. `Persona_workflow_B.json` - Newsletter
 
 ### 4. Set the API keys in the nodes
 
@@ -175,7 +175,7 @@ In **Workflow B**, update these nodes with your keys:
 | `NewsAPI` | `apiKey` | Your NewsAPI key |
 | `The Guardian API` | `api-key` | Your Guardian key (or `test`) |
 
-In **Workflow B — node "Construire email HTML"**, update the links:
+In **Workflow B - node "Construire email HTML"**, update the links:
 
 ```javascript
 // Unsubscribe link (Webhook C URL in production)
@@ -203,7 +203,7 @@ http://localhost:5678/webhook/feedback?uid={{ userId }}&token={{ token }}&newsle
 
 ### End-to-end test
 
-**Step 1 — Sign up via the chatbot**
+**Step 1 - Sign up via the chatbot**
 1. Open `http://localhost:5678/webhook/persona-chatbot-webhook-001/chat`
 2. Say "Hello" → the agent offers sign-up or login
 3. Sign up with a `username`, an `email` and a `password`
@@ -214,7 +214,7 @@ http://localhost:5678/webhook/feedback?uid={{ userId }}&token={{ token }}&newsle
    - Language: `fr` or `en`
    - Number of articles: e.g. `3`
 
-**Step 2 — Send the newsletter**
+**Step 2 - Send the newsletter**
 
 To test without waiting for the scheduled time:
 1. Open **Workflow B**
@@ -222,7 +222,7 @@ To test without waiting for the scheduled time:
 3. Click **Execute Workflow**
 4. Check your inbox
 
-**Step 3 — Test unsubscribe**
+**Step 3 - Test unsubscribe**
 1. Open the received email
 2. Click the **unsubscribe** link at the bottom
 3. An unsubscribe confirmation page should appear
@@ -237,11 +237,11 @@ To test without waiting for the scheduled time:
 
 ```
 .
-├── Persona_workflow_A.json       # Chatbot workflow (onboarding & auth — n8n chat UI)
+├── Persona_workflow_A.json       # Chatbot workflow (onboarding & auth - n8n chat UI)
 ├── Persona_workflow_A_API.json   # Chatbot workflow as a REST API (webhook POST)
 ├── Persona_workflow_B.json       # Newsletter workflow (generation & delivery)
 ├── Persona_workflow_C.json       # Unsubscribe workflow (GDPR)
-├── demo_chat.html                # HTML demo page — calls the chatbot API
+├── demo_chat.html                # HTML demo page - calls the chatbot API
 ├── assets/                       # Screenshots
 ├── SETUP.md                      # Quick setup guide
 ├── README.md                     # This file
@@ -257,7 +257,7 @@ To test without waiting for the scheduled time:
 ## 🔒 Security & GDPR
 
 ### Authentication
-- ⚠️ Known limitation: passwords are currently stored as provided (no hashing node runs before the insert) and transit through the LLM. Planned fix: hash with n8n's Crypto node / bcrypt and collect credentials outside the chat — see `SECURITY.md`.
+- ⚠️ Known limitation: passwords are currently stored as provided (no hashing node runs before the insert) and transit through the LLM. Planned fix: hash with n8n's Crypto node / bcrypt and collect credentials outside the chat - see `SECURITY.md`.
 - Sessions have an **expiry time** (24h by default).
 - Each session is identified by a unique `session_id` generated by n8n.
 - The chatbot refuses any action if the session is invalid or expired.
@@ -287,7 +287,7 @@ The prompt is enriched dynamically with:
 - **Past feedback**: ratings left on previous newsletters (via the chatbot or the email buttons) are read from `newsletter_logs` and injected into the prompt to refine the next selection. This step runs **sequentially** before the API calls so the data is available.
 - **`factCheckScore`**: each article gets a cross-source confirmation score. The LLM is instructed to prioritize high-scoring articles.
 
-The default model is configurable in the **"LLM Newsletter"** node. The project uses a free OpenRouter model, but can easily switch to GPT-4, Claude, Mistral, etc.
+The default model is configurable in the **"LLM Newsletter"** node. The workflows use OpenAI GPT-4o-mini through OpenRouter (a low-cost paid model) and can switch to any other OpenRouter model (GPT-4, Claude, Mistral, etc.).
 
 ---
 
@@ -334,7 +334,7 @@ Schedules are compared at **minute** level (`HH:mm` format), made possible by th
 | Endpoint | Method | Description |
 |---|---|---|
 | `/webhook/trigger-newsletter` | POST | Triggers the newsletter (called by cron-job.org) |
-| `/webhook/api-chat` | POST | REST chatbot API — used by `demo_chat.html` |
+| `/webhook/api-chat` | POST | REST chatbot API - used by `demo_chat.html` |
 | `/webhook/unsubscribe` | GET | GDPR unsubscribe via email link |
 | `/webhook/feedback` | GET | Records feedback (liked / disliked) |
 
