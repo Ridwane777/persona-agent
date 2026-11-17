@@ -96,7 +96,7 @@
         "promptType": "define",
         "text": "={{ $json.chatInput }}",
         "options": {
-          "systemMessage": "You are the welcome assistant of Persona, a personalised AI newsletter service.\n\n=== CURRENT SESSION ===\nSession ID: ${$('Chat trigger').first().json.sessionId}\n\n=== YOUR ROLE ===\nHandle ONLY sign-ups and logins. Nothing else.\n\n=== DIALOGUE RULES ===\n- Always reply in the user's language, in plain, clear and friendly text.\n- NEVER show JSON to the user.\n\n=== SIGN-UP ===\n1. Ask for the 3 pieces of information: Username, Email, Password.\n2. AS SOON AS you have these 3 pieces of information, CALL THE 'register' TOOL IMMEDIATELY. Do not write any sentence, just call the tool!\n3. ONLY ONCE the 'register' tool has succeeded, reply to the user.\nInclude exactly (translated into the user's language): \"Your data will be stored to send you your newsletter. You can unsubscribe at any time.\" Then ask them to log in.\n\n=== LOGIN ===\nAsk for the email and the password.\nAs soon as you have them, you MUST call the 'Find_user' tool with this email and password.\nIf the tool returns a user (success) -> you MUST call the 'Create_active_sessions' tool with:\n  - session_id = ${$('Chat trigger').first().json.sessionId}\n  - user_id = (id returned by Find_user)\nIf the tool returns nothing -> tell the user that the email or password is incorrect."
+          "systemMessage": "=You are the welcome assistant of Persona, a personalised AI newsletter service.\n\n=== CURRENT SESSION ===\nSession ID: {{ $('Chat trigger').first().json.sessionId }}\n\n=== YOUR ROLE ===\nHandle ONLY sign-ups and logins. Nothing else.\n\n=== DIALOGUE RULES ===\n- Always reply in the user's language, in plain, clear and friendly text.\n- NEVER show JSON to the user.\n\n=== SIGN-UP ===\n1. Ask for the 3 pieces of information: Username, Email, Password.\n2. AS SOON AS you have these 3 pieces of information, CALL THE 'register' TOOL IMMEDIATELY. Do not write any sentence, just call the tool!\n3. ONLY ONCE the 'register' tool has succeeded, reply to the user.\nInclude exactly (translated into the user's language): \"Your data will be stored to send you your newsletter. You can unsubscribe at any time.\" Then ask them to log in.\n\n=== LOGIN ===\nAsk for the email and the password.\nAs soon as you have them, you MUST call the 'Find_user' tool with this email and password.\nIf the tool returns a user (success) -> you MUST call the 'Create_active_sessions' tool with:\n  - session_id = {{ $('Chat trigger').first().json.sessionId }}\n  - user_id = (id returned by Find_user)\nIf the tool returns nothing -> tell the user that the email or password is incorrect."
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
@@ -226,7 +226,7 @@
           "fieldValues": [
             {
               "fieldId": "session_id",
-              "fieldValue": "={{ $fromAI('session_id', 'The session ID of the current conversation', 'string') }}"
+              "fieldValue": "={{ $('Chat trigger').first().json.sessionId }}"
             },
             {
               "fieldId": "user_id",
@@ -392,7 +392,7 @@
         "promptType": "define",
         "text": "={{ $json.chatInput }}",
         "options": {
-          "systemMessage": "={{ `You are the main Persona assistant for the user ${$('Get user info').first()?.json?.username || 'User'}.\n\n=== USER CONTEXT ===\nUsername: ${$('Get user info').first()?.json?.username || 'Unknown'}\nUser ID: ${$('Get user info').first()?.json?.id || 'Unknown'}\nSession ID: ${$('Chat trigger').first()?.json?.sessionId || 'Unknown'}\n\n=== CURRENT PREFERENCES ===\n${JSON.stringify($('Get preferences').first()?.json || {})}\n\n=== YOUR CAPABILITIES ===\n1. ONBOARDING: If the user has no preferences yet (empty topics), guide them to set them up.\n   Collect in this order: topics (interests), delivery time (HH:MM UTC), number of articles wanted (1-10), language (fr/en).\n   Mention GDPR consent before saving.\n   When everything is collected, call 'save_preferences'.\n\n2. CHANGES: The user can change their preferences at any time.\n   Call 'update_preferences' with the new values.\n\n3. FEEDBACK: If the user comments on a past newsletter, call 'save_feedback'.\n\n4. UNSUBSCRIBE: If the user wants to unsubscribe, confirm their intent, then call 'unsubscribe_user'.\n\n5. CUSTOM PROMPT: If the user wants to customise the tone/style of their newsletter, call 'update_custom_prompt'.\n\n=== RULES ===\n- Always reply in the user's language, in friendly plain text.\n- Never show JSON or technical data.\n- Only handle the data of THIS user.` }}"
+          "systemMessage": "={{ `You are the main Persona assistant for the user ${$('Get user info').first()?.json?.username || 'User'}.\n\n=== USER CONTEXT ===\nUsername: ${$('Get user info').first()?.json?.username || 'Unknown'}\nUser ID: ${$('Get user info').first()?.json?.id || 'Unknown'}\nSession ID: ${$('Chat trigger').first()?.json?.sessionId || 'Unknown'}\n\n=== CURRENT PREFERENCES ===\n${JSON.stringify($('Get preferences').first()?.json || {})}\n\n=== YOUR CAPABILITIES ===\n1. ONBOARDING: If the user has no preferences yet (empty topics), guide them to set them up.\n   Collect in this order: topics (interests), delivery time (HH:MM UTC), number of articles wanted (1-10), language (fr/en).\n   Mention GDPR consent before saving.\n   When everything is collected, call 'save_preferences'.\n\n2. CHANGES: The user can change their preferences at any time.\n   Call 'update_preferences' with the new values.\n\n3. FEEDBACK: If the user comments on a past newsletter, call 'save_feedback'.\n\n4. UNSUBSCRIBE: If the user wants to unsubscribe, confirm their intent, then call 'unsubscribe_user', 'delete_preferences' and 'delete_sessions', in this order.\n\n5. CUSTOM PROMPT: If the user wants to customise the tone/style of their newsletter, call 'update_custom_prompt'.\n\n=== RULES ===\n- Always reply in the user's language, in friendly plain text.\n- Never show JSON or technical data.\n- Only handle the data of THIS user.` }}"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
@@ -446,7 +446,7 @@
           "fieldValues": [
             {
               "fieldId": "user_id",
-              "fieldValue": "={{ $fromAI('user_id', 'The ID of the logged-in user', 'string') }}"
+              "fieldValue": "={{ $('Get user info').first().json.id }}"
             },
             {
               "fieldId": "topics",
@@ -493,7 +493,7 @@
             {
               "keyName": "user_id",
               "condition": "eq",
-              "keyValue": "={{ $fromAI('user_id', 'The user ID', 'string') }}"
+              "keyValue": "={{ $('Get user info').first().json.id }}"
             }
           ]
         },
@@ -544,7 +544,7 @@
             {
               "keyName": "user_id",
               "condition": "eq",
-              "keyValue": "={{ $fromAI('user_id', 'The user ID', 'string') }}"
+              "keyValue": "={{ $('Get user info').first().json.id }}"
             }
           ]
         },
@@ -583,7 +583,7 @@
             {
               "keyName": "user_id",
               "condition": "eq",
-              "keyValue": "={{ $fromAI('user_id', 'The user ID', 'string') }}"
+              "keyValue": "={{ $('Get user info').first().json.id }}"
             }
           ]
         },
@@ -622,7 +622,7 @@
             {
               "keyName": "id",
               "condition": "eq",
-              "keyValue": "={{ $fromAI('user_id', 'The ID of the user to unsubscribe', 'string') }}"
+              "keyValue": "={{ $('Get user info').first().json.id }}"
             }
           ]
         },
@@ -634,7 +634,7 @@
             },
             {
               "fieldId": "email",
-              "fieldValue": "={{ $fromAI('anonymized_email', 'Anonymised email, format: deleted_<user_id>@persona.local', 'string') }}"
+              "fieldValue": "={{ 'deleted_' + $('Get user info').first().json.id + '@persona.local' }}"
             }
           ]
         }
@@ -759,6 +759,68 @@
       ],
       "id": "code-session-check-001",
       "name": "Compute Session State"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Deletes the user's preferences. Call it right after 'unsubscribe_user'.",
+        "operation": "delete",
+        "tableId": "preferences",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Get user info').first().json.id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        580,
+        -220
+      ],
+      "id": "a6509df2-a18f-4813-a8b8-594ed7eb26c3",
+      "name": "delete_preferences",
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Deletes the user's sessions. Call it last, after 'delete_preferences'.",
+        "operation": "delete",
+        "tableId": "sessions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Get user info').first().json.id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        740,
+        -220
+      ],
+      "id": "fb283646-6dca-48a6-a8a6-f05cc3604772",
+      "name": "delete_sessions",
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase account"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -1025,6 +1087,28 @@
           {
             "node": "Session active?",
             "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "delete_preferences": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent (logged in)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "delete_sessions": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent (logged in)",
+            "type": "ai_tool",
             "index": 0
           }
         ]

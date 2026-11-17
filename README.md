@@ -19,7 +19,7 @@ flowchart LR
     A -->|logged in| MAIN[Main agent<br/>preferences, custom prompt,<br/>feedback, unsubscribe, consent]
     AUTH --> DB[(Supabase<br/>users, preferences,<br/>sessions, newsletter_logs)]
     MAIN --> DB
-    CRON[External cron<br/>every minute] -->|POST /trigger-newsletter| B[Workflow B<br/>newsletter]
+    CRON[External cron<br/>every minute] -->|GET /trigger-newsletter| B[Workflow B<br/>newsletter]
     DB --> B
     NEWS[NewsAPI + The Guardian<br/>+ BBC RSS] --> B
     B -->|LLM chain: filter + summarise| LLM[OpenRouter<br/>gpt-4o-mini]
@@ -38,7 +38,7 @@ raw articles if parsing fails), build the HTML email, send it with Gmail and log
 | --- | --- | --- | --- | --- |
 | A | `workflows/a-chatbot.json` | n8n Chat Trigger (hosted chat page) | Sign-up, login, preferences, feedback, unsubscribe | Chat reply |
 | A_API | `workflows/a-chatbot-api.json` | `POST /webhook/api-chat` | Same logic as A for any HTTP client (used by `demo/chat.html`) | JSON `{"reply": "..."}` |
-| B | `workflows/b-newsletter.json` | `POST /webhook/trigger-newsletter`, called every minute by an external cron | Build and send the newsletters due now | Gmail email + `newsletter_logs` row |
+| B | `workflows/b-newsletter.json` | `GET /webhook/trigger-newsletter`, called every minute by an external cron | Build and send the newsletters due now | Gmail email + `newsletter_logs` row |
 | C | `workflows/c-unsubscribe-feedback.json` | `GET /webhook/unsubscribe`, `GET /webhook/feedback` | Verify the link token, then anonymise the account or store the rating | HTML confirmation page |
 
 ## Quickstart

@@ -104,9 +104,11 @@ The token logic and its limits are described in [security.md](security.md).
 1. **Workflow C**: activate (exposes `GET /webhook/unsubscribe` and `GET /webhook/feedback`).
 2. **Workflow A**: in the Chat Trigger, enable public chat, then activate. **Workflow A_API**: activate
    (exposes `POST /webhook/api-chat`).
-3. **Workflow B**: activate (exposes `POST /webhook/trigger-newsletter`).
-4. Configure an external scheduler (the project used cron-job.org) to `POST` to `/webhook/trigger-newsletter`
-   **every minute**. Workflow B compares the current `HH:MM` with each user's `schedule_time`. See
+3. **Workflow B**: create a **Header Auth** credential (name `X-Trigger-Key`, value a long random secret),
+   select it in `Webhook Trigger` (placeholder `TRIGGER_HEADER_AUTH_CREDENTIAL_ID`), then activate (exposes
+   `GET /webhook/trigger-newsletter`; calls without the header get `403`).
+4. Configure an external scheduler (the project used cron-job.org) to call `GET /webhook/trigger-newsletter`
+   **every minute**, with the header `X-Trigger-Key: <secret>`. Workflow B compares the current `HH:MM` with each user's `schedule_time`. See
    [ADR-0004](adr/0004-external-cron-trigger.md).
 
 ### Hosting variables used in production

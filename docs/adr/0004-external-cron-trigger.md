@@ -21,7 +21,7 @@ internal Schedule Trigger does not fire while the instance is asleep.
 
 ## Decision
 
-Workflow B starts with `Webhook Trigger` on `POST /webhook/trigger-newsletter`, called every minute by
+Workflow B starts with `Webhook Trigger` on `GET /webhook/trigger-newsletter`, called every minute by
 cron-job.org. `Check schedule` compares the current `HH:MM` in the user's time zone with `schedule_time`.
 
 ## Consequences

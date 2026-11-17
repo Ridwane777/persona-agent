@@ -29,8 +29,8 @@ tool. This is how the agent turns "I'm bob@example.com" into a database insert.
 
 The consequence: anything filled by `$fromAI` is model output. It can be wrong (a hallucinated ID), or steered
 by a malicious message (prompt injection). Values that the workflow already knows, such as the logged-in
-`user_id`, are safer as normal expressions. `Record GDPR consent` does that with `$('Get user info')`; the other
-main-agent tools still take `user_id` from `$fromAI` (see [security.md](security.md)).
+`user_id`, are safer as normal expressions: every main-agent tool takes it from `$('Get user info')`
+(see [security.md](security.md)).
 
 ## 3. Window buffer memory
 

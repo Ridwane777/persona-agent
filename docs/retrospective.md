@@ -34,13 +34,9 @@ written down, so this table cannot compare planned with actual; that is itself a
 | Problem (verified in the code) | Named alternative | When it becomes worth it | Its cost |
 | --- | --- | --- | --- |
 | Password typed in the chat, sent to the LLM, stored as unsalted SHA-256 | Supabase Auth (magic link) or an n8n Form with bcrypt/argon2; chat receives only the session | Before any real user | One page or form, about a day |
-| `user_id` in most main-agent tools chosen by the model via `$fromAI` | Set `user_id` with an expression from `check_sessions`, as `Record GDPR consent` already does | Now; it is a few field edits | Under an hour |
 | Static-salt bit-shift token, no expiry | HMAC-SHA256 with n8n's Crypto node and a secret in a credential, with an expiry date in the signed data | Before sending to real addresses | Two nodes, about two hours |
-| Time zone fallback maps `UTC` to `Africa/Lagos` while the chatbot asks for UTC | Store `schedule_tz` from the chat and remove the fallback; or ask for local time and the IANA zone | Now (wrong delivery time) | About an hour plus a migration of existing rows |
-| Auth agent system prompt is not an n8n expression, so `${$('Chat trigger')...}` is sent literally instead of the session ID | Prefix the prompt with `=` and use `{{ }}` like the main agent | Now | Minutes |
-| `save_feedback` updates every log row of the user | Filter on the latest `newsletter_id` | Once users have several newsletters | Under an hour |
+| `save_feedback` (chat) updates every log row of the user; the Supabase node cannot target only the latest | Filter on the latest `newsletter_id` | Once users have several newsletters | Under an hour |
 | A and A_API duplicate 25 nodes | One sub-workflow (Execute Workflow) called by both triggers | As soon as the logic changes again | Half a day |
-| LLM and article text inserted into HTML unescaped | Escape function in `Build HTML email` | Before real users | Under an hour |
 | One NewsAPI call per user per day hits the 100/day free cap | Fetch once per topic per hour and cache in Supabase; or a paid news API | Above about 50 to 100 users | A cache table and a second workflow; or a paid plan |
 | Every-minute polling with no catch-up | Queue the next send time per user and process due rows (`WHERE next_send_at <= now()`), so a missed minute is caught up later | When missed emails are reported | A column and a query change |
 | No tests | Export the Code-node functions to a small JS module with unit tests, and a script that checks node references in the JSON | From the start of the next project | A day to set up |
@@ -73,10 +69,16 @@ written down, so this table cannot compare planned with actual; that is itself a
 
 ## Next actions
 
-1. Bind `user_id` to the session in all main-agent tools, and fix the auth prompt expression.
-2. Fix the time zone handling and store `schedule_tz` from the chat.
-3. Move login to Supabase Auth or a form with bcrypt/argon2 (new ADR superseding [ADR-0006](adr/0006-credentials-in-chat.md)).
-4. Replace the token with HMAC-SHA256 (new ADR superseding [ADR-0005](adr/0005-unsubscribe-token.md)).
-5. Escape HTML in the email; add a secret header on `trigger-newsletter`.
-6. Merge A and A_API through a sub-workflow.
-7. Measure real token usage and replace the estimates in [costs.md](costs.md).
+1. Store `schedule_tz` from the chat, so users can ask for local time.
+2. Move login to Supabase Auth or a form with bcrypt/argon2 (new ADR superseding [ADR-0006](adr/0006-credentials-in-chat.md)).
+3. Replace the token with HMAC-SHA256 (new ADR superseding [ADR-0005](adr/0005-unsubscribe-token.md)).
+4. Merge A and A_API through a sub-workflow.
+5. Measure real token usage and replace the estimates in [costs.md](costs.md).
+
+## Fixed on 2026-11-17
+
+Found while writing this retrospective, fixed in the workflows: `user_id` bound to the session in every
+main-agent tool; auth prompt turned into an n8n expression so the real session ID reaches the model, and
+`session_id` taken from the trigger; time zone fallback to `Africa/Lagos` removed; HTML escaping and `http(s)`-only
+links in the email; JSON-safe API replies; unsubscribing through the chat also deletes preferences and sessions,
+like the email link; secret header required on `trigger-newsletter`.

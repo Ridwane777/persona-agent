@@ -9,7 +9,7 @@ Every external service, library and secret Persona depends on. Quotas are the fr
 | --- | --- | --- | --- | --- |
 | n8n (self-hosted, community edition) | All | Runs the workflows, webhooks, hosted chat | Self-hosted: no execution limit | Everything stops |
 | Render (web service) | Hosting | Runs n8n in production | Free instance sleeps when idle (see [ADR-0004](adr/0004-external-cron-trigger.md)) | Everything stops |
-| cron-job.org | B | Calls `POST /webhook/trigger-newsletter` every minute | Free | No newsletters sent |
+| cron-job.org | B | Calls `GET /webhook/trigger-newsletter` every minute | Free | No newsletters sent |
 | Supabase | A, A_API, B, C | Postgres database | Free project, paused when idle | Chat and newsletters fail |
 | OpenRouter (`openai/gpt-4o-mini`) | A, A_API, B | LLM for both agents and the newsletter chain | Paid per token (see [costs.md](costs.md)) | Chat fails; B falls back to raw articles only if the call returns |
 | NewsAPI (`/v2/everything`) | B | News search | **100 requests/day**; the free Developer plan is for development, not commercial use | One call per newsletter: caps the service at about 100 newsletters a day |
