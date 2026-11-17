@@ -95,7 +95,7 @@
         "promptType": "define",
         "text": "={{ $json.body.message }}",
         "options": {
-          "systemMessage": "Tu es l'assistant d'accueil de Persona, un service de newsletter IA personnalisée.\n\n=== SESSION ACTUELLE ===\nSession ID : ${$('Chat trigger').first().json.body.sessionId}\n\n=== TON RÔLE ===\nGérer UNIQUEMENT les inscriptions et les connexions. Rien d'autre.\n\n=== RÈGLES DE DIALOGUE ===\n- Réponds toujours en texte brut, clair et convivial.\n- Ne montre JAMAIS de JSON à l'utilisateur.\n\n=== INSCRIPTION ===\n1. Demande les 3 informations : Username, Email, Mot de passe.\n2. DÈS QUE tu as ces 3 informations, APPELLE IMMÉDIATEMENT L'OUTIL 'register'. Ne fais aucune phrase, appelle juste l'outil !\n3. UNE FOIS QUE l'outil 'register' a réussi, ALORS SEULEMENT réponds à l'utilisateur.\nInclus exactement : \"Tes données seront stockées pour t'envoyer ta newsletter. Tu peux te désinscrire à tout moment.\" Puis demande-lui de se connecter.\n\n=== CONNEXION ===\nDemande l'email et le mot de passe.\nDès que tu les as, TU DOIS appeler l'outil 'Find_user' avec cet email et ce password.\nSi l'outil retourne un utilisateur (succès) -> TU DOIS appeler l'outil 'Create_active_sessions' avec :\n  - session_id = ${$('Chat trigger').first().json.body.sessionId}\n  - user_id = (id retourné par Find_user)\nSi l'outil ne retourne rien -> informe l'utilisateur que l'email ou le mot de passe est incorrect."
+          "systemMessage": "You are the welcome assistant of Persona, a personalised AI newsletter service.\n\n=== CURRENT SESSION ===\nSession ID: ${$('Chat trigger').first().json.body.sessionId}\n\n=== YOUR ROLE ===\nHandle ONLY sign-ups and logins. Nothing else.\n\n=== DIALOGUE RULES ===\n- Always reply in the user's language, in plain, clear and friendly text.\n- NEVER show JSON to the user.\n\n=== SIGN-UP ===\n1. Ask for the 3 pieces of information: Username, Email, Password.\n2. AS SOON AS you have these 3 pieces of information, CALL THE 'register' TOOL IMMEDIATELY. Do not write any sentence, just call the tool!\n3. ONLY ONCE the 'register' tool has succeeded, reply to the user.\nInclude exactly (translated into the user's language): \"Your data will be stored to send you your newsletter. You can unsubscribe at any time.\" Then ask them to log in.\n\n=== LOGIN ===\nAsk for the email and the password.\nAs soon as you have them, you MUST call the 'Find_user' tool with this email and password.\nIf the tool returns a user (success) -> you MUST call the 'Create_active_sessions' tool with:\n  - session_id = ${$('Chat trigger').first().json.body.sessionId}\n  - user_id = (id returned by Find_user)\nIf the tool returns nothing -> tell the user that the email or password is incorrect."
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
@@ -105,7 +105,7 @@
         120
       ],
       "id": "auth-agent-001",
-      "name": "Agent Auth (non connecté)"
+      "name": "Auth Agent (logged out)"
     },
     {
       "parameters": {
@@ -118,7 +118,7 @@
         320
       ],
       "id": "memory-auth-001",
-      "name": "Mémoire Auth"
+      "name": "Auth Memory"
     },
     {
       "parameters": {
@@ -143,21 +143,21 @@
     {
       "parameters": {
         "descriptionType": "manual",
-        "toolDescription": "Utilise cet outil pour créer le compte de l'utilisateur avec son username, email et password.",
+        "toolDescription": "Use this tool to create the user's account with their username, email and password.",
         "tableId": "users",
         "fieldsUi": {
           "fieldValues": [
             {
               "fieldId": "username",
-              "fieldValue": "={{ $fromAI('username', 'Le username choisi par l\\'utilisateur', 'string') }}"
+              "fieldValue": "={{ $fromAI('username', 'The username chosen by the user', 'string') }}"
             },
             {
               "fieldId": "email",
-              "fieldValue": "={{ $fromAI('email', 'L\\'adresse email fournie par l\\'utilisateur', 'string') }}"
+              "fieldValue": "={{ $fromAI('email', 'The email address provided by the user', 'string') }}"
             },
             {
               "fieldId": "password_hash",
-              "fieldValue": "={{ $fromAI('password', 'Le mot de passe fourni par l\\'utilisateur', 'string').hash('sha256') }}"
+              "fieldValue": "={{ $fromAI('password', 'The password provided by the user', 'string').hash('sha256') }}"
             }
           ]
         }
@@ -180,7 +180,7 @@
     {
       "parameters": {
         "descriptionType": "manual",
-        "toolDescription": "Cherche un utilisateur via email et mot de passe pour le connecter.",
+        "toolDescription": "Looks up a user by email and password to log them in.",
         "operation": "getAll",
         "tableId": "users",
         "filters": {
@@ -188,12 +188,12 @@
             {
               "keyName": "email",
               "condition": "eq",
-              "keyValue": "={{ $fromAI('email', 'L\\'adresse email de l\\'utilisateur', 'string') }}"
+              "keyValue": "={{ $fromAI('email', 'The user\\'s email address', 'string') }}"
             },
             {
               "keyName": "password_hash",
               "condition": "eq",
-              "keyValue": "={{ $fromAI('password', 'Le mot de passe fourni par l\\'utilisateur', 'string').hash('sha256') }}"
+              "keyValue": "={{ $fromAI('password', 'The password provided by the user', 'string').hash('sha256') }}"
             }
           ]
         },
@@ -219,17 +219,17 @@
     {
       "parameters": {
         "descriptionType": "manual",
-        "toolDescription": "Crée une session active pour un utilisateur connecté.",
+        "toolDescription": "Creates an active session for a logged-in user.",
         "tableId": "sessions",
         "fieldsUi": {
           "fieldValues": [
             {
               "fieldId": "session_id",
-              "fieldValue": "={{ $fromAI('session_id', 'Le session ID de la conversation en cours', 'string') }}"
+              "fieldValue": "={{ $fromAI('session_id', 'The session ID of the current conversation', 'string') }}"
             },
             {
               "fieldId": "user_id",
-              "fieldValue": "={{ $fromAI('user_id', 'L\\'ID utilisateur récupéré via Find_user', 'string') }}"
+              "fieldValue": "={{ $fromAI('user_id', 'The user ID returned by Find_user', 'string') }}"
             },
             {
               "fieldId": "expires_at",
@@ -277,7 +277,7 @@
         -180
       ],
       "id": "get-session-user-001",
-      "name": "Récupérer user_id session",
+      "name": "Get session user_id",
       "credentials": {
         "supabaseApi": {
           "id": "SUPABASE_CREDENTIAL_ID",
@@ -310,7 +310,7 @@
         -180
       ],
       "id": "get-user-info-001",
-      "name": "Récupérer infos utilisateur",
+      "name": "Get user info",
       "credentials": {
         "supabaseApi": {
           "id": "SUPABASE_CREDENTIAL_ID",
@@ -343,7 +343,7 @@
         -180
       ],
       "id": "get-prefs-001",
-      "name": "Récupérer préférences",
+      "name": "Get preferences",
       "alwaysOutputData": true,
       "credentials": {
         "supabaseApi": {
@@ -384,14 +384,14 @@
         -180
       ],
       "id": "if-prefs-001",
-      "name": "Préférences configurées?"
+      "name": "Preferences configured?"
     },
     {
       "parameters": {
         "promptType": "define",
         "text": "={{ $json.body.message }}",
         "options": {
-          "systemMessage": "={{ `Tu es l'assistant principal de Persona pour l'utilisateur ${$('Récupérer infos utilisateur').first()?.json?.username || 'Utilisateur'}.\n\n=== CONTEXTE UTILISATEUR ===\nUsername : ${$('Récupérer infos utilisateur').first()?.json?.username || 'Inconnu'}\nUser ID : ${$('Récupérer infos utilisateur').first()?.json?.id || 'Inconnu'}\nSession ID : ${$('Chat trigger').first().json.body.sessionId || 'Inconnu'}\n\n=== PRÉFÉRENCES ACTUELLES ===\n${JSON.stringify($('Récupérer préférences').first()?.json || {})}\n\n=== TES CAPACITÉS ===\n1. ONBOARDING : Si l'utilisateur n'a pas encore de préférences (topics vides), guide-le pour les configurer.\n   Collecte dans cet ordre : topics (centres d'intérêt), heure de réception (HH:MM UTC), nombre d'articles souhaités (1-10), langue (fr/en).\n   Mentionne le consentement RGPD avant de sauvegarder.\n   Quand tout est collecté, appelle 'save_preferences'.\n\n2. MODIFICATION : L'utilisateur peut changer ses préférences à tout moment.\n   Appelle 'update_preferences' avec les nouvelles valeurs.\n\n3. FEEDBACK : Si l'utilisateur commente une newsletter passée, appelle 'save_feedback'.\n\n4. DÉSINSCRIPTION : Si l'utilisateur veut se désinscrire, confirme son intention, puis appelle 'unsubscribe_user'.\n\n5. PROMPT PERSONNALISÉ : Si l'utilisateur veut customiser le ton/style de sa newsletter, appelle 'update_custom_prompt'.\n\n=== RÈGLES ===\n- Réponds toujours en texte brut convivial.\n- Ne montre jamais de JSON ou données techniques.\n- Ne traite que les données de CET utilisateur uniquement.` }}"
+          "systemMessage": "={{ `You are the main Persona assistant for the user ${$('Get user info').first()?.json?.username || 'User'}.\n\n=== USER CONTEXT ===\nUsername: ${$('Get user info').first()?.json?.username || 'Unknown'}\nUser ID: ${$('Get user info').first()?.json?.id || 'Unknown'}\nSession ID: ${$('Chat trigger').first().json.body.sessionId || 'Unknown'}\n\n=== CURRENT PREFERENCES ===\n${JSON.stringify($('Get preferences').first()?.json || {})}\n\n=== YOUR CAPABILITIES ===\n1. ONBOARDING: If the user has no preferences yet (empty topics), guide them to set them up.\n   Collect in this order: topics (interests), delivery time (HH:MM UTC), number of articles wanted (1-10), language (fr/en).\n   Mention GDPR consent before saving.\n   When everything is collected, call 'save_preferences'.\n\n2. CHANGES: The user can change their preferences at any time.\n   Call 'update_preferences' with the new values.\n\n3. FEEDBACK: If the user comments on a past newsletter, call 'save_feedback'.\n\n4. UNSUBSCRIBE: If the user wants to unsubscribe, confirm their intent, then call 'unsubscribe_user'.\n\n5. CUSTOM PROMPT: If the user wants to customise the tone/style of their newsletter, call 'update_custom_prompt'.\n\n=== RULES ===\n- Always reply in the user's language, in friendly plain text.\n- Never show JSON or technical data.\n- Only handle the data of THIS user.` }}"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
@@ -401,7 +401,7 @@
         -180
       ],
       "id": "main-agent-001",
-      "name": "Agent Principal (connecté)"
+      "name": "Main Agent (logged in)"
     },
     {
       "parameters": {
@@ -414,7 +414,7 @@
         20
       ],
       "id": "memory-main-001",
-      "name": "Mémoire Principal"
+      "name": "Main Memory"
     },
     {
       "parameters": {
@@ -428,7 +428,7 @@
         20
       ],
       "id": "llm-main-001",
-      "name": "LLM Principal",
+      "name": "LLM Main",
       "credentials": {
         "openRouterApi": {
           "id": "OPENROUTER_CREDENTIAL_ID",
@@ -439,29 +439,29 @@
     {
       "parameters": {
         "descriptionType": "manual",
-        "toolDescription": "Sauvegarde les préférences de newsletter de l'utilisateur. Appelle après avoir collecté tous les paramètres ET obtenu le consentement RGPD explicite.",
+        "toolDescription": "Saves the user's newsletter preferences. Call it after collecting all settings AND obtaining explicit GDPR consent.",
         "tableId": "preferences",
         "fieldsUi": {
           "fieldValues": [
             {
               "fieldId": "user_id",
-              "fieldValue": "={{ $fromAI('user_id', 'L\\'ID de l\\'utilisateur connecté', 'string') }}"
+              "fieldValue": "={{ $fromAI('user_id', 'The ID of the logged-in user', 'string') }}"
             },
             {
               "fieldId": "topics",
-              "fieldValue": "={{ $fromAI('topics', 'Tableau des centres d\\'intérêt ex: [\"tech\",\"sport\"]', 'string') }}"
+              "fieldValue": "={{ $fromAI('topics', 'Array of interests, e.g. [\"tech\",\"sport\"]', 'string') }}"
             },
             {
               "fieldId": "schedule_time",
-              "fieldValue": "={{ $fromAI('schedule_time', 'Heure d\\'envoi au format HH:MM:SS ex: 08:00:00', 'string') }}"
+              "fieldValue": "={{ $fromAI('schedule_time', 'Delivery time in HH:MM:SS format, e.g. 08:00:00', 'string') }}"
             },
             {
               "fieldId": "language",
-              "fieldValue": "={{ $fromAI('language', 'Code langue ex: fr ou en', 'string') }}"
+              "fieldValue": "={{ $fromAI('language', 'Language code, e.g. fr or en', 'string') }}"
             },
             {
               "fieldId": "num_articles",
-              "fieldValue": "={{ $fromAI('num_articles', 'Nombre d\\'articles souhaités entre 1 et 10', 'number') }}"
+              "fieldValue": "={{ $fromAI('num_articles', 'Number of articles wanted, between 1 and 10', 'number') }}"
             }
           ]
         }
@@ -484,7 +484,7 @@
     {
       "parameters": {
         "descriptionType": "manual",
-        "toolDescription": "Met à jour les préférences existantes d'un utilisateur.",
+        "toolDescription": "Updates a user's existing preferences.",
         "operation": "update",
         "tableId": "preferences",
         "filters": {
@@ -492,7 +492,7 @@
             {
               "keyName": "user_id",
               "condition": "eq",
-              "keyValue": "={{ $fromAI('user_id', 'L\\'ID de l\\'utilisateur', 'string') }}"
+              "keyValue": "={{ $fromAI('user_id', 'The user ID', 'string') }}"
             }
           ]
         },
@@ -500,19 +500,19 @@
           "fieldValues": [
             {
               "fieldId": "topics",
-              "fieldValue": "={{ $fromAI('topics', 'Nouveaux centres d\\'intérêt', 'string') }}"
+              "fieldValue": "={{ $fromAI('topics', 'New interests', 'string') }}"
             },
             {
               "fieldId": "schedule_time",
-              "fieldValue": "={{ $fromAI('schedule_time', 'Nouvelle heure HH:MM:SS', 'string') }}"
+              "fieldValue": "={{ $fromAI('schedule_time', 'New time HH:MM:SS', 'string') }}"
             },
             {
               "fieldId": "language",
-              "fieldValue": "={{ $fromAI('language', 'Nouvelle langue', 'string') }}"
+              "fieldValue": "={{ $fromAI('language', 'New language', 'string') }}"
             },
             {
               "fieldId": "num_articles",
-              "fieldValue": "={{ $fromAI('num_articles', 'Nouveau nombre d\\'articles', 'number') }}"
+              "fieldValue": "={{ $fromAI('num_articles', 'New number of articles', 'number') }}"
             }
           ]
         }
@@ -535,7 +535,7 @@
     {
       "parameters": {
         "descriptionType": "manual",
-        "toolDescription": "Met à jour le prompt personnalisé de l'utilisateur pour customiser le style de sa newsletter.",
+        "toolDescription": "Updates the user's custom prompt to customise the style of their newsletter.",
         "operation": "update",
         "tableId": "preferences",
         "filters": {
@@ -543,7 +543,7 @@
             {
               "keyName": "user_id",
               "condition": "eq",
-              "keyValue": "={{ $fromAI('user_id', 'L\\'ID de l\\'utilisateur', 'string') }}"
+              "keyValue": "={{ $fromAI('user_id', 'The user ID', 'string') }}"
             }
           ]
         },
@@ -551,7 +551,7 @@
           "fieldValues": [
             {
               "fieldId": "custom_prompt",
-              "fieldValue": "={{ $fromAI('custom_prompt', 'Instructions personnalisées pour la newsletter ex: ton humoristique, 3 articles max...', 'string') }}"
+              "fieldValue": "={{ $fromAI('custom_prompt', 'Custom instructions for the newsletter, e.g. humorous tone, 3 articles max...', 'string') }}"
             }
           ]
         }
@@ -574,7 +574,7 @@
     {
       "parameters": {
         "descriptionType": "manual",
-        "toolDescription": "Sauvegarde un feedback sur la dernière newsletter reçue. Permet d'améliorer les prochaines éditions.",
+        "toolDescription": "Saves feedback on the last newsletter received. Used to improve the next editions.",
         "operation": "update",
         "tableId": "newsletter_logs",
         "filters": {
@@ -582,7 +582,7 @@
             {
               "keyName": "user_id",
               "condition": "eq",
-              "keyValue": "={{ $fromAI('user_id', 'L\\'ID de l\\'utilisateur', 'string') }}"
+              "keyValue": "={{ $fromAI('user_id', 'The user ID', 'string') }}"
             }
           ]
         },
@@ -590,7 +590,7 @@
           "fieldValues": [
             {
               "fieldId": "feedback",
-              "fieldValue": "={{ $fromAI('feedback', 'Le feedback de l\\'utilisateur sur sa newsletter', 'string') }}"
+              "fieldValue": "={{ $fromAI('feedback', 'The user\\'s feedback on their newsletter', 'string') }}"
             }
           ]
         }
@@ -613,7 +613,7 @@
     {
       "parameters": {
         "descriptionType": "manual",
-        "toolDescription": "Désinscrit un utilisateur : désactive son compte et anonymise ses données personnelles. À utiliser UNIQUEMENT après confirmation explicite de l'utilisateur.",
+        "toolDescription": "Unsubscribes a user: deactivates their account and anonymises their personal data. Use ONLY after explicit confirmation from the user.",
         "operation": "update",
         "tableId": "users",
         "filters": {
@@ -621,7 +621,7 @@
             {
               "keyName": "id",
               "condition": "eq",
-              "keyValue": "={{ $fromAI('user_id', 'L\\'ID de l\\'utilisateur à désinscrire', 'string') }}"
+              "keyValue": "={{ $fromAI('user_id', 'The ID of the user to unsubscribe', 'string') }}"
             }
           ]
         },
@@ -633,7 +633,7 @@
             },
             {
               "fieldId": "email",
-              "fieldValue": "={{ $fromAI('anonymized_email', 'Email anonymisé format: deleted_<user_id>@persona.local', 'string') }}"
+              "fieldValue": "={{ $fromAI('anonymized_email', 'Anonymised email, format: deleted_<user_id>@persona.local', 'string') }}"
             }
           ]
         }
@@ -656,7 +656,7 @@
     {
       "parameters": {
         "descriptionType": "manual",
-        "toolDescription": "Marque le consentement RGPD de l'utilisateur dans la table users après confirmation explicite.",
+        "toolDescription": "Records the user's GDPR consent in the users table after explicit confirmation.",
         "tableId": "users",
         "operation": "update",
         "filters": {
@@ -664,7 +664,7 @@
             {
               "keyName": "id",
               "condition": "eq",
-              "keyValue": "={{ $('Récupérer infos utilisateur').first().json.id }}"
+              "keyValue": "={{ $('Get user info').first().json.id }}"
             }
           ]
         },
@@ -688,7 +688,7 @@
         220
       ],
       "id": "gdpr-consent-001",
-      "name": "Marquer consentement RGPD",
+      "name": "Record GDPR consent",
       "credentials": {
         "supabaseApi": {
           "id": "SUPABASE_CREDENTIAL_ID",
@@ -744,7 +744,7 @@
         -180
       ],
       "id": "restore-chat-principal-001",
-      "name": "Restore Chat Input Principal"
+      "name": "Restore Chat Input Main"
     },
     {
       "parameters": {
@@ -818,7 +818,7 @@
       "main": [
         [
           {
-            "node": "Récupérer user_id session",
+            "node": "Get session user_id",
             "type": "main",
             "index": 0
           }
@@ -832,62 +832,62 @@
         ]
       ]
     },
-    "Récupérer user_id session": {
+    "Get session user_id": {
       "main": [
         [
           {
-            "node": "Récupérer infos utilisateur",
+            "node": "Get user info",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Récupérer infos utilisateur": {
+    "Get user info": {
       "main": [
         [
           {
-            "node": "Récupérer préférences",
+            "node": "Get preferences",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Récupérer préférences": {
+    "Get preferences": {
       "main": [
         [
           {
-            "node": "Préférences configurées?",
+            "node": "Preferences configured?",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Préférences configurées?": {
+    "Preferences configured?": {
       "main": [
         [
           {
-            "node": "Restore Chat Input Principal",
+            "node": "Restore Chat Input Main",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Restore Chat Input Principal",
+            "node": "Restore Chat Input Main",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Mémoire Auth": {
+    "Auth Memory": {
       "ai_memory": [
         [
           {
-            "node": "Agent Auth (non connecté)",
+            "node": "Auth Agent (logged out)",
             "type": "ai_memory",
             "index": 0
           }
@@ -898,7 +898,7 @@
       "ai_languageModel": [
         [
           {
-            "node": "Agent Auth (non connecté)",
+            "node": "Auth Agent (logged out)",
             "type": "ai_languageModel",
             "index": 0
           }
@@ -909,7 +909,7 @@
       "ai_tool": [
         [
           {
-            "node": "Agent Auth (non connecté)",
+            "node": "Auth Agent (logged out)",
             "type": "ai_tool",
             "index": 0
           }
@@ -920,7 +920,7 @@
       "ai_tool": [
         [
           {
-            "node": "Agent Auth (non connecté)",
+            "node": "Auth Agent (logged out)",
             "type": "ai_tool",
             "index": 0
           }
@@ -931,29 +931,29 @@
       "ai_tool": [
         [
           {
-            "node": "Agent Auth (non connecté)",
+            "node": "Auth Agent (logged out)",
             "type": "ai_tool",
             "index": 0
           }
         ]
       ]
     },
-    "Mémoire Principal": {
+    "Main Memory": {
       "ai_memory": [
         [
           {
-            "node": "Agent Principal (connecté)",
+            "node": "Main Agent (logged in)",
             "type": "ai_memory",
             "index": 0
           }
         ]
       ]
     },
-    "LLM Principal": {
+    "LLM Main": {
       "ai_languageModel": [
         [
           {
-            "node": "Agent Principal (connecté)",
+            "node": "Main Agent (logged in)",
             "type": "ai_languageModel",
             "index": 0
           }
@@ -964,7 +964,7 @@
       "ai_tool": [
         [
           {
-            "node": "Agent Principal (connecté)",
+            "node": "Main Agent (logged in)",
             "type": "ai_tool",
             "index": 0
           }
@@ -975,7 +975,7 @@
       "ai_tool": [
         [
           {
-            "node": "Agent Principal (connecté)",
+            "node": "Main Agent (logged in)",
             "type": "ai_tool",
             "index": 0
           }
@@ -986,18 +986,18 @@
       "ai_tool": [
         [
           {
-            "node": "Agent Principal (connecté)",
+            "node": "Main Agent (logged in)",
             "type": "ai_tool",
             "index": 0
           }
         ]
       ]
     },
-    "Marquer consentement RGPD": {
+    "Record GDPR consent": {
       "ai_tool": [
         [
           {
-            "node": "Agent Principal (connecté)",
+            "node": "Main Agent (logged in)",
             "type": "ai_tool",
             "index": 0
           }
@@ -1008,7 +1008,7 @@
       "ai_tool": [
         [
           {
-            "node": "Agent Principal (connecté)",
+            "node": "Main Agent (logged in)",
             "type": "ai_tool",
             "index": 0
           }
@@ -1019,7 +1019,7 @@
       "ai_tool": [
         [
           {
-            "node": "Agent Principal (connecté)",
+            "node": "Main Agent (logged in)",
             "type": "ai_tool",
             "index": 0
           }
@@ -1030,18 +1030,18 @@
       "main": [
         [
           {
-            "node": "Agent Auth (non connecté)",
+            "node": "Auth Agent (logged out)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Restore Chat Input Principal": {
+    "Restore Chat Input Main": {
       "main": [
         [
           {
-            "node": "Agent Principal (connecté)",
+            "node": "Main Agent (logged in)",
             "type": "main",
             "index": 0
           }
@@ -1059,7 +1059,7 @@
         ]
       ]
     },
-    "Agent Principal (connecté)": {
+    "Main Agent (logged in)": {
       "main": [
         [
           {
@@ -1070,7 +1070,7 @@
         ]
       ]
     },
-    "Agent Auth (non connecté)": {
+    "Auth Agent (logged out)": {
       "main": [
         [
           {

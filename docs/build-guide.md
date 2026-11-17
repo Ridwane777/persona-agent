@@ -3,22 +3,28 @@
 
 ---
 
+> **Status of this guide.** It was written as the build plan before the workflows existed, so some snippets
+> differ from the final exports (for example, Workflow B is started by a webhook that an external cron calls,
+> not by a Schedule Trigger, and the auth agent hashes passwords inside the Supabase tools with
+> `$fromAI('password', ...).hash('sha256')` rather than in a separate Code node). The JSON files in
+> [`../workflows/`](../workflows/) are the source of truth. Installation steps live only in [setup.md](setup.md).
+
 ## Table of contents
 
 1. [n8n in 5 minutes](#1-n8n-in-5-minutes)
 2. [Overall architecture](#2-overall-architecture)
-3. [Supabase - database schema](#3-supabase--database-schema)
-4. [Core 1 - Chatbot trigger & authentication](#4-core-1--chatbot-trigger--authentication)
-5. [Core 2 - User onboarding through the chatbot](#5-core-2--user-onboarding-through-the-chatbot)
-6. [Core 3 - Fetching news from multiple sources](#6-core-3--fetching-news-from-multiple-sources)
-7. [Core 4 - Per-user AI filtering](#7-core-4--per-user-ai-filtering)
-8. [Core 5 - Sending the newsletter by email](#8-core-5--sending-the-newsletter-by-email)
-9. [Core 6 - Per-user scheduling](#9-core-6--per-user-scheduling)
-10. [Core 7 - Basic GDPR & unsubscribe](#10-core-7--basic-gdpr--unsubscribe)
-11. [Extra 1 - HTML newsletter](#11-extra-1--html-newsletter)
-12. [Extra 2 - Feedback on past newsletters](#12-extra-2--feedback-on-past-newsletters)
-13. [Extra 3 - Fact-checking](#13-extra-3--fact-checking)
-14. [Extra 4 - Per-user custom prompt](#14-extra-4--per-user-custom-prompt)
+3. [Supabase - database schema](#3-supabase---database-schema)
+4. [Core 1 - Chatbot trigger & authentication](#4-core-1---chatbot-trigger--authentication)
+5. [Core 2 - User onboarding through the chatbot](#5-core-2---user-onboarding-through-the-chatbot)
+6. [Core 3 - Fetching news from multiple sources](#6-core-3---fetching-news-from-multiple-sources)
+7. [Core 4 - Per-user AI filtering](#7-core-4---per-user-ai-filtering)
+8. [Core 5 - Sending the newsletter by email](#8-core-5---sending-the-newsletter-by-email)
+9. [Core 6 - Per-user scheduling](#9-core-6---per-user-scheduling)
+10. [Core 7 - Basic GDPR & unsubscribe](#10-core-7---basic-gdpr--unsubscribe)
+11. [Extra 1 - HTML newsletter](#11-extra-1---html-newsletter)
+12. [Extra 2 - Feedback on past newsletters](#12-extra-2---feedback-on-past-newsletters)
+13. [Extra 3 - Fact-checking](#13-extra-3---fact-checking)
+14. [Extra 4 - Per-user custom prompt](#14-extra-4---per-user-custom-prompt)
 15. [Recommended build order](#15-recommended-build-order)
 16. [Common n8n beginner mistakes](#16-common-n8n-beginner-mistakes)
 17. [Pre-demo checklist](#17-pre-demo-checklist)
@@ -45,8 +51,8 @@ Each node receives an array of **items** (JSON objects) and returns a new one. T
 
 ```
 {{ $json.nom_du_champ }}           → field value
-{{ $json["champ avec espace"] }}   → field with a space/special character
-{{ $('Nom du nœud').item.json.x }} → value from a specific node by name
+{{ $json["field with space"] }}   → field with a space/special character
+{{ $('Node name').item.json.x }} → value from a specific node by name
 ```
 
 ### Most-used nodes
@@ -99,74 +105,13 @@ The project consists of **3 separate workflows**:
 
 ## 3. Supabase - database schema
 
-### Tables
+Four tables: `users` (account, `password_hash`, `is_active`, GDPR consent), `preferences` (topics,
+`schedule_time`, `schedule_tz`, `language`, `num_articles`, `custom_prompt`), `newsletter_logs` (one row per
+newsletter sent, plus `feedback` and `rating`) and `sessions` (chat `session_id` to `user_id`, with `expires_at`).
 
-#### Table `users`
-
-```sql
-CREATE TABLE users (
-  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  username     TEXT UNIQUE NOT NULL,
-  password_hash TEXT NOT NULL,          -- bcrypt or sha256
-  email        TEXT NOT NULL,
-  created_at   TIMESTAMP DEFAULT now(),
-  is_active    BOOLEAN DEFAULT true,    -- for GDPR unsubscribe
-  gdpr_consent BOOLEAN DEFAULT false,
-  gdpr_consent_date TIMESTAMP
-);
-```
-
-#### Table `preferences`
-
-```sql
-CREATE TABLE preferences (
-  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id       UUID REFERENCES users(id) ON DELETE CASCADE,
-  topics        TEXT[],                 -- e.g. ['tech', 'climate', 'sport']
-  schedule_time TIME NOT NULL,          -- e.g. '08:00:00'
-  schedule_tz   TEXT DEFAULT 'UTC',
-  custom_prompt TEXT,                   -- Extra 4
-  language      TEXT DEFAULT 'fr',
-  num_articles  INT DEFAULT 5
-);
-```
-
-#### Table `newsletter_logs`
-
-```sql
-CREATE TABLE newsletter_logs (
-  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id         UUID REFERENCES users(id) ON DELETE CASCADE,
-  newsletter_id   VARCHAR(255),           -- trackable link / email feedback
-  sent_at         TIMESTAMP DEFAULT now(),
-  articles        JSONB,                  -- articles sent
-  feedback        TEXT,                   -- free-text comment
-  feedback_source VARCHAR(50) CHECK (feedback_source IN ('chat', 'email_link')),
-  rating          VARCHAR(50) CHECK (rating IN ('good', 'bad')),
-  created_at      TIMESTAMP DEFAULT now(),
-  updated_at      TIMESTAMP DEFAULT now()
-);
-```
-
-#### Table `sessions`
-
-```sql
-CREATE TABLE sessions (
-  session_id   TEXT PRIMARY KEY,        -- chatbot session identifier
-  user_id      UUID REFERENCES users(id) ON DELETE CASCADE,
-  created_at   TIMESTAMP DEFAULT now(),
-  expires_at   TIMESTAMP
-);
-```
-
-### Supabase connection in n8n
-
-1. In n8n → **Settings > Credentials > New**
-2. Search "Supabase"
-3. Fill in: project URL (`https://xxx.supabase.co`) + Service Role Key (Supabase > Settings > API)
-4. Give it a clear name: `Supabase - Persona`
-
-> ⚠️ Use the **Service Role Key** (not the anon key) to bypass Row Level Security from n8n. Keep it secret.
+The SQL to create them and the Supabase credential steps are in [setup.md](setup.md) (single source, so the
+schema is not duplicated here). Use the **service role key** in n8n: it bypasses Row Level Security, so keep it
+secret.
 
 ---
 
@@ -501,7 +446,7 @@ Send a well-formatted email to the user with the selected articles.
 // Code node - build the email body
 const articles = $json.articles; // AI output
 const userName = $json.username;
-const date = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'nuuser', month: 'long' });
+const date = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
 
 let body = `Hello ${userName},\n\n`;
 body += `Here is your news selection for ${date}:\n\n`;
@@ -598,14 +543,14 @@ In the Workflow A AI Agent, handle the "unsubscribe" intent:
 Add at the bottom of every newsletter:
 
 ```
-To unsubscribe: https://ton-n8n.com/webhook/unsubscribe?uid={{ userId }}&token={{ token }}
+To unsubscribe: https://your-n8n.example.com/webhook/unsubscribe?uid={{ userId }}&token={{ token }}
 ```
 
 For email feedback, also add to the footer:
 
 ```
-I liked it: https://ton-n8n.com/webhook/feedback?uid={{ userId }}&token={{ token }}&newsletter_id={{ newsletterId }}&rating=good
-I didn't like it: https://ton-n8n.com/webhook/feedback?uid={{ userId }}&token={{ token }}&newsletter_id={{ newsletterId }}&rating=bad
+I liked it: https://your-n8n.example.com/webhook/feedback?uid={{ userId }}&token={{ token }}&newsletter_id={{ newsletterId }}&rating=good
+I didn't like it: https://your-n8n.example.com/webhook/feedback?uid={{ userId }}&token={{ token }}&newsletter_id={{ newsletterId }}&rating=bad
 ```
 
 Then create **Workflow C** with a **Webhook Trigger**:
@@ -647,7 +592,7 @@ HTML emails are far more readable and professional. n8n + Gmail fully support HT
 // Code node - generate the HTML
 const articles = $json.articles;
 const userName = $json.username;
-const date = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'nuuser', month: 'long' });
+const date = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
 
 const articleCards = articles.map(a => `
   <div style="border-left: 3px solid #6366f1; padding-left: 16px; margin-bottom: 24px;">

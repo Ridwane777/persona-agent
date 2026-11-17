@@ -1,5 +1,5 @@
 {
-  "name": "Persona - Workflow C (Désinscription)",
+  "name": "Persona - Workflow C (Unsubscribe and Feedback)",
   "nodes": [
     {
       "parameters": {
@@ -14,7 +14,7 @@
         176
       ],
       "id": "e2f389b7-7375-47fb-b022-98ca33598b41",
-      "name": "Webhook Désinscription",
+      "name": "Webhook Unsubscribe",
       "webhookId": "persona-unsubscribe-webhook"
     },
     {
@@ -35,7 +35,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const { uid, token } = $json.query || {};\n\nif (!uid || !token) {\n  return [{ json: { valid: false, reason: 'Paramètres manquants', uid: null } }];\n}\n\nconst simpleHash = str => {\n  let hash = 0;\n  for (let i = 0; i < str.length; i++) {\n    hash = ((hash << 5) - hash) + str.charCodeAt(i);\n    hash |= 0;\n  }\n  return Math.abs(hash).toString(16);\n};\n\nconst expectedToken = simpleHash(uid + 'CHANGE_ME_SECRET_SALT');\nconst valid = token === expectedToken;\n\nreturn [{ json: { valid, uid, reason: valid ? 'OK' : 'Token invalide' } }];"
+        "jsCode": "const { uid, token } = $json.query || {};\n\nif (!uid || !token) {\n  return [{ json: { valid: false, reason: 'Missing parameters', uid: null } }];\n}\n\nconst simpleHash = str => {\n  let hash = 0;\n  for (let i = 0; i < str.length; i++) {\n    hash = ((hash << 5) - hash) + str.charCodeAt(i);\n    hash |= 0;\n  }\n  return Math.abs(hash).toString(16);\n};\n\nconst expectedToken = simpleHash(uid + 'CHANGE_ME_SECRET_SALT');\nconst valid = token === expectedToken;\n\nreturn [{ json: { valid, uid, reason: valid ? 'OK' : 'Invalid token' } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -44,7 +44,7 @@
         400
       ],
       "id": "cc6864ac-1a22-45cd-9d72-9e0b411440ed",
-      "name": "Vérifier token feedback"
+      "name": "Verify feedback token"
     },
     {
       "parameters": {
@@ -78,7 +78,7 @@
         400
       ],
       "id": "d12ef5e9-469f-4fb1-a919-417e2f2b1a24",
-      "name": "Token feedback valide?"
+      "name": "Feedback token valid?"
     },
     {
       "parameters": {
@@ -117,7 +117,7 @@
         400
       ],
       "id": "2033f339-3f63-4fa7-aa40-28f993621da5",
-      "name": "Insérer feedback",
+      "name": "Store feedback",
       "credentials": {
         "supabaseApi": {
           "id": "SUPABASE_CREDENTIAL_ID",
@@ -128,7 +128,7 @@
     {
       "parameters": {
         "respondWith": "text",
-        "responseBody": "<!DOCTYPE html><html lang=\"fr\"><head><meta charset=\"UTF-8\"><title>Merci pour ton avis</title><style>body{font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f3f4f6} .card{background:white;border-radius:12px;padding:48px;text-align:center;box-shadow:0 4px 6px rgba(0,0,0,.07)} h1{margin:0 0 16px;color:#1e1b4b;} p{color:#6b7280;line-height:1.6;}</style></head><body><div class=\"card\"><h1>Merci pour ton avis</h1><p>Ton feedback a bien été enregistré. Cela aidera Persona à s'améliorer.</p></div></body></html>",
+        "responseBody": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><title>Thanks for your feedback</title><style>body{font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f3f4f6} .card{background:white;border-radius:12px;padding:48px;text-align:center;box-shadow:0 4px 6px rgba(0,0,0,.07)} h1{margin:0 0 16px;color:#1e1b4b;} p{color:#6b7280;line-height:1.6;}</style></head><body><div class=\"card\"><h1>Thanks for your feedback</h1><p>Your feedback has been recorded. It will help Persona improve.</p></div></body></html>",
         "options": {
           "responseHeaders": {
             "entries": [
@@ -147,12 +147,12 @@
         400
       ],
       "id": "0a458f5c-a655-48e2-b4cb-92e5e5267945",
-      "name": "Répondre feedback succès"
+      "name": "Respond feedback success"
     },
     {
       "parameters": {
         "respondWith": "text",
-        "responseBody": "<!DOCTYPE html><html lang=\"fr\"><head><meta charset=\"UTF-8\"><title>Feedback invalide</title><style>body{font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f3f4f6} .card{background:white;border-radius:12px;padding:48px;text-align:center;box-shadow:0 4px 6px rgba(0,0,0,.07)} h1{margin:0 0 16px;color:#7f1d1d;} p{color:#6b7280;line-height:1.6;}</style></head><body><div class=\"card\"><h1>Feedback invalide</h1><p>Ce lien de feedback est invalide ou expiré. Merci de réessayer depuis la newsletter.</p></div></body></html>",
+        "responseBody": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><title>Invalid feedback</title><style>body{font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f3f4f6} .card{background:white;border-radius:12px;padding:48px;text-align:center;box-shadow:0 4px 6px rgba(0,0,0,.07)} h1{margin:0 0 16px;color:#7f1d1d;} p{color:#6b7280;line-height:1.6;}</style></head><body><div class=\"card\"><h1>Invalid feedback</h1><p>This feedback link is invalid or expired. Please try again from the newsletter.</p></div></body></html>",
         "options": {
           "responseCode": 400,
           "responseHeaders": {
@@ -172,11 +172,11 @@
         560
       ],
       "id": "921498ab-b605-418f-ba80-dc45da1a4c82",
-      "name": "Répondre feedback erreur"
+      "name": "Respond feedback error"
     },
     {
       "parameters": {
-        "jsCode": "const { uid, token } = $json.query || {};\n\nif (!uid || !token) {\n  return [{ json: { valid: false, reason: 'Paramètres manquants', uid: null } }];\n}\n\n// Fonction de hash simple (remplace crypto qui est désactivé par défaut)\nconst simpleHash = str => {\n  let hash = 0;\n  for (let i = 0; i < str.length; i++) {\n    hash = ((hash << 5) - hash) + str.charCodeAt(i);\n    hash |= 0;\n  }\n  return Math.abs(hash).toString(16);\n};\n\nconst expectedToken = simpleHash(uid + 'CHANGE_ME_SECRET_SALT');\nconst valid = token === expectedToken;\n\nreturn [{ json: { valid, uid, reason: valid ? 'OK' : 'Token invalide' } }];"
+        "jsCode": "const { uid, token } = $json.query || {};\n\nif (!uid || !token) {\n  return [{ json: { valid: false, reason: 'Missing parameters', uid: null } }];\n}\n\n// Simple non-cryptographic hash (demo-grade; the crypto module is disabled by default in Code nodes)\nconst simpleHash = str => {\n  let hash = 0;\n  for (let i = 0; i < str.length; i++) {\n    hash = ((hash << 5) - hash) + str.charCodeAt(i);\n    hash |= 0;\n  }\n  return Math.abs(hash).toString(16);\n};\n\nconst expectedToken = simpleHash(uid + 'CHANGE_ME_SECRET_SALT');\nconst valid = token === expectedToken;\n\nreturn [{ json: { valid, uid, reason: valid ? 'OK' : 'Invalid token' } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -185,7 +185,7 @@
         176
       ],
       "id": "b44e42b8-aea0-4303-bc1e-83d0d3709b7b",
-      "name": "Vérifier token"
+      "name": "Verify token"
     },
     {
       "parameters": {
@@ -219,7 +219,7 @@
         176
       ],
       "id": "f65372d6-8ba4-4fd0-bfb2-2747b211809f",
-      "name": "Token valide?"
+      "name": "Token valid?"
     },
     {
       "parameters": {
@@ -254,7 +254,7 @@
         48
       ],
       "id": "cc3689a9-645f-4f33-8cd8-21722050dd72",
-      "name": "Désactiver compte",
+      "name": "Deactivate account",
       "alwaysOutputData": true,
       "credentials": {
         "supabaseApi": {
@@ -272,7 +272,7 @@
             {
               "keyName": "user_id",
               "condition": "eq",
-              "keyValue": "={{ $('Vérifier token').item.json.uid }}"
+              "keyValue": "={{ $('Verify token').item.json.uid }}"
             }
           ]
         }
@@ -284,7 +284,7 @@
         48
       ],
       "id": "2f4dc6b9-3375-42f1-9cd8-a0b694492781",
-      "name": "Supprimer préférences",
+      "name": "Delete preferences",
       "alwaysOutputData": true,
       "credentials": {
         "supabaseApi": {
@@ -302,7 +302,7 @@
             {
               "keyName": "user_id",
               "condition": "eq",
-              "keyValue": "={{ $('Vérifier token').item.json.uid }}"
+              "keyValue": "={{ $('Verify token').item.json.uid }}"
             }
           ]
         }
@@ -314,7 +314,7 @@
         48
       ],
       "id": "344f9f76-e71c-43da-ab61-2e1d017e412e",
-      "name": "Supprimer sessions",
+      "name": "Delete sessions",
       "alwaysOutputData": true,
       "credentials": {
         "supabaseApi": {
@@ -326,7 +326,7 @@
     {
       "parameters": {
         "respondWith": "text",
-        "responseBody": "<!DOCTYPE html><html lang=\"fr\"><head><meta charset=\"UTF-8\"><title>Désinscription confirmée</title><style>body{font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f3f4f6}.card{background:white;border-radius:12px;padding:48px;text-align:center;max-width:400px;box-shadow:0 4px 6px rgba(0,0,0,.07)}.icon{font-size:48px;margin-bottom:16px}h1{color:#1e1b4b;margin:0 0 12px}p{color:#6b7280;line-height:1.6}</style></head><body><div class=\"card\"><div class=\"icon\">✅</div><h1>Désinscription confirmée</h1><p>Tes données ont été supprimées conformément au RGPD. Tu ne recevras plus de newsletter Persona.</p><p style=\"margin-top:24px;font-size:13px\">Tu peux te réinscrire à tout moment via le chatbot.</p></div></body></html>",
+        "responseBody": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><title>Unsubscribe confirmed</title><style>body{font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f3f4f6}.card{background:white;border-radius:12px;padding:48px;text-align:center;max-width:400px;box-shadow:0 4px 6px rgba(0,0,0,.07)}.icon{font-size:48px;margin-bottom:16px}h1{color:#1e1b4b;margin:0 0 12px}p{color:#6b7280;line-height:1.6}</style></head><body><div class=\"card\"><div class=\"icon\">&#10003;</div><h1>Unsubscribe confirmed</h1><p>Your data has been deleted in line with the GDPR. You will no longer receive the Persona newsletter.</p><p style=\"margin-top:24px;font-size:13px\">You can sign up again at any time through the chatbot.</p></div></body></html>",
         "options": {
           "responseHeaders": {
             "entries": [
@@ -345,12 +345,12 @@
         48
       ],
       "id": "ae441f8e-6cf3-413d-b0df-f6de944c3a88",
-      "name": "Répondre succès"
+      "name": "Respond success"
     },
     {
       "parameters": {
         "respondWith": "text",
-        "responseBody": "<!DOCTYPE html><html lang=\"fr\"><head><meta charset=\"UTF-8\"><title>Erreur</title><style>body{font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f3f4f6}.card{background:white;border-radius:12px;padding:48px;text-align:center;max-width:400px;box-shadow:0 4px 6px rgba(0,0,0,.07)}.icon{font-size:48px;margin-bottom:16px}h1{color:#7f1d1d;margin:0 0 12px}p{color:#6b7280;line-height:1.6}</style></head><body><div class=\"card\"><div class=\"icon\">❌</div><h1>Lien invalide</h1><p>Ce lien de désinscription est invalide ou a déjà été utilisé.</p><p style=\"margin-top:24px;font-size:13px\">Pour te désinscrire, contacte-nous via le chatbot.</p></div></body></html>",
+        "responseBody": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><title>Error</title><style>body{font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f3f4f6}.card{background:white;border-radius:12px;padding:48px;text-align:center;max-width:400px;box-shadow:0 4px 6px rgba(0,0,0,.07)}.icon{font-size:48px;margin-bottom:16px}h1{color:#7f1d1d;margin:0 0 12px}p{color:#6b7280;line-height:1.6}</style></head><body><div class=\"card\"><div class=\"icon\">&#10007;</div><h1>Invalid link</h1><p>This unsubscribe link is invalid or has already been used.</p><p style=\"margin-top:24px;font-size:13px\">To unsubscribe, contact us through the chatbot.</p></div></body></html>",
         "options": {
           "responseCode": 400,
           "responseHeaders": {
@@ -370,16 +370,16 @@
         288
       ],
       "id": "6b6beef5-1b9f-4b4b-b692-fa5821755ae5",
-      "name": "Répondre erreur"
+      "name": "Respond error"
     }
   ],
   "pinData": {},
   "connections": {
-    "Webhook Désinscription": {
+    "Webhook Unsubscribe": {
       "main": [
         [
           {
-            "node": "Vérifier token",
+            "node": "Verify token",
             "type": "main",
             "index": 0
           }
@@ -390,109 +390,109 @@
       "main": [
         [
           {
-            "node": "Vérifier token feedback",
+            "node": "Verify feedback token",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Vérifier token feedback": {
+    "Verify feedback token": {
       "main": [
         [
           {
-            "node": "Token feedback valide?",
+            "node": "Feedback token valid?",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Token feedback valide?": {
+    "Feedback token valid?": {
       "main": [
         [
           {
-            "node": "Insérer feedback",
+            "node": "Store feedback",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Répondre feedback erreur",
+            "node": "Respond feedback error",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Insérer feedback": {
+    "Store feedback": {
       "main": [
         [
           {
-            "node": "Répondre feedback succès",
+            "node": "Respond feedback success",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Vérifier token": {
+    "Verify token": {
       "main": [
         [
           {
-            "node": "Token valide?",
+            "node": "Token valid?",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Token valide?": {
+    "Token valid?": {
       "main": [
         [
           {
-            "node": "Désactiver compte",
+            "node": "Deactivate account",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Répondre erreur",
+            "node": "Respond error",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Désactiver compte": {
+    "Deactivate account": {
       "main": [
         [
           {
-            "node": "Supprimer préférences",
+            "node": "Delete preferences",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Supprimer préférences": {
+    "Delete preferences": {
       "main": [
         [
           {
-            "node": "Supprimer sessions",
+            "node": "Delete sessions",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Supprimer sessions": {
+    "Delete sessions": {
       "main": [
         [
           {
-            "node": "Répondre succès",
+            "node": "Respond success",
             "type": "main",
             "index": 0
           }
